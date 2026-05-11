@@ -65,15 +65,24 @@ ensure_repo() {
 ensure_secrets_repo() {
   [[ "${SKIP_SECRETS:-0}" == "1" ]] && { log "SKIP_SECRETS=1, skipping secrets clone"; return; }
   mkdir -p "$(dirname "$SECRETS_DIR")"
+
+  # If gh is authed and SECRETS_REPO is HTTPS, wire gh as git credential helper
+  # so the clone doesn't block waiting for username/password.
+  if [[ "$SECRETS_REPO" == https://github.com/* ]] && has gh && gh auth status >/dev/null 2>&1; then
+    gh auth setup-git 2>/dev/null || true
+  fi
+
   if [[ ! -d "$SECRETS_DIR/.git" ]]; then
-    log "Cloning dotfiles-secrets -> $SECRETS_DIR  (needs SSH agent access to private repo)"
-    if ! git clone "$SECRETS_REPO" "$SECRETS_DIR" 2>/dev/null; then
-      warn "Could not clone secrets repo (private; requires SSH agent forwarding)."
-      warn "Create it later, or write ~/.zshrc.local manually with your exports."
+    log "Cloning dotfiles-secrets -> $SECRETS_DIR"
+    if ! GIT_TERMINAL_PROMPT=0 git clone "$SECRETS_REPO" "$SECRETS_DIR"; then
+      warn "Could not clone secrets repo. Either:"
+      warn "  - run 'gh auth login' and re-run bootstrap, or"
+      warn "  - clone manually: git clone $SECRETS_REPO $SECRETS_DIR"
     fi
   else
     log "Updating secrets repo"
-    git -C "$SECRETS_DIR" pull --ff-only 2>/dev/null || warn "secrets git pull skipped"
+    GIT_TERMINAL_PROMPT=0 git -C "$SECRETS_DIR" pull --ff-only 2>/dev/null \
+      || warn "secrets git pull skipped"
   fi
 }
 
