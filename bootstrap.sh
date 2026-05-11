@@ -109,9 +109,15 @@ install_micromamba() {
 
 mamba_install() {
   install_micromamba
-  log "micromamba install: $*"
   export MAMBA_ROOT_PREFIX="$MAMBA_ROOT"
-  "$LOCAL_BIN/micromamba" install -y -p "$MAMBA_ENV" -c conda-forge "$@"
+  mkdir -p "$MAMBA_ROOT"
+  if [[ ! -d "$MAMBA_ENV/conda-meta" ]]; then
+    log "micromamba create env: $*"
+    "$LOCAL_BIN/micromamba" create -y -p "$MAMBA_ENV" -c conda-forge "$@"
+  else
+    log "micromamba install: $*"
+    "$LOCAL_BIN/micromamba" install -y -p "$MAMBA_ENV" -c conda-forge "$@"
+  fi
 }
 
 # ------------------------------------------------------------------ oh-my-tmux
