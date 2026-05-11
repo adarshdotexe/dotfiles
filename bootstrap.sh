@@ -209,13 +209,17 @@ if ! has sesh; then
     aarch64|arm64) SA=arm64 ;;
     *)             SA=$(uname -m) ;;
   esac
-  # Use GitHub's /releases/latest/download/ redirect — no API call, no rate limit.
+  # Download then extract — avoids a quirk where filtered tar closes the pipe early.
+  tmp=$(mktemp -d)
   if curl -fsSL "https://github.com/joshmedeski/sesh/releases/latest/download/sesh_Linux_${SA}.tar.gz" \
-       | tar -xz -C "$LOCAL_BIN" sesh; then
-    chmod +x "$LOCAL_BIN/sesh"
+       -o "$tmp/sesh.tar.gz" \
+     && tar -xzf "$tmp/sesh.tar.gz" -C "$tmp" \
+     && [[ -f "$tmp/sesh" ]]; then
+    install -m 0755 "$tmp/sesh" "$LOCAL_BIN/sesh"
   else
-    warn "sesh install failed; install manually from https://github.com/joshmedeski/sesh/releases"
+    warn "sesh install failed; grab the binary from https://github.com/joshmedeski/sesh/releases"
   fi
+  rm -rf "$tmp"
 fi
 
 # Stage 4: oh-my-zsh + plugins + powerlevel10k.
