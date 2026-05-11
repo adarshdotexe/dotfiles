@@ -4,20 +4,20 @@
 # (BAN, SC, ...) and WSL/Ubuntu/macOS.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/advarshney/dotfiles/main/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/adarshdotexe/dotfiles/main/bootstrap.sh | bash
 #
 # Env overrides:
-#   DOTFILES_REPO=https://github.com/advarshney/dotfiles.git
+#   DOTFILES_REPO=https://github.com/adarshdotexe/dotfiles.git
 #   DOTFILES_DIR=$HOME/repos/dotfiles
-#   SECRETS_REPO=git@github.com:advarshney/dotfiles-secrets.git
+#   SECRETS_REPO=git@github.com:adarshdotexe/dotfiles-secrets.git
 #   SECRETS_DIR=$HOME/.config/dotfiles-secrets
 #   SKIP_SECRETS=1     # don't try to clone the secrets repo
 
 set -euo pipefail
 
-DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/advarshney/dotfiles.git}"
+DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/adarshdotexe/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/repos/dotfiles}"
-SECRETS_REPO="${SECRETS_REPO:-git@github.com:advarshney/dotfiles-secrets.git}"
+SECRETS_REPO="${SECRETS_REPO:-git@github.com:adarshdotexe/dotfiles-secrets.git}"
 SECRETS_DIR="${SECRETS_DIR:-$HOME/.config/dotfiles-secrets}"
 LOCAL_BIN="$HOME/.local/bin"
 MAMBA_ROOT="$HOME/.local/micromamba"
@@ -257,5 +257,5 @@ Next:
 
 If the secrets clone failed (private repo permissions / no agent):
   mkdir -p ~/.config/dotfiles-secrets
-  git clone git@github.com:advarshney/dotfiles-secrets.git ~/.config/dotfiles-secrets
+  git clone git@github.com:adarshdotexe/dotfiles-secrets.git ~/.config/dotfiles-secrets
 EOF

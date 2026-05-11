@@ -1,4 +1,4 @@
-# Secrets — `advarshney/dotfiles-secrets` (private)
+# Secrets — `adarshdotexe/dotfiles-secrets` (private)
 
 Secrets (API tokens, passwords, anything you don't want public) live in a
 separate **private** GitHub repo, cloned by `bootstrap.sh` to
@@ -16,7 +16,7 @@ separate **private** GitHub repo, cloned by `bootstrap.sh` to
 
 1. **Create the private repo on GitHub:**
    ```bash
-   gh repo create advarshney/dotfiles-secrets --private --description "Secrets for dotfiles. Never make this public."
+   gh repo create adarshdotexe/dotfiles-secrets --private --description "Secrets for dotfiles. Never make this public."
    ```
 
 2. **Initialize it locally:**
@@ -24,7 +24,7 @@ separate **private** GitHub repo, cloned by `bootstrap.sh` to
    mkdir -p ~/.config/dotfiles-secrets
    cd ~/.config/dotfiles-secrets
    git init -b main
-   git remote add origin git@github.com:advarshney/dotfiles-secrets.git
+   git remote add origin git@github.com:adarshdotexe/dotfiles-secrets.git
    ```
 
 3. **Create `secrets.zsh`:**
@@ -65,7 +65,7 @@ your GitHub key (which it does — `ForwardAgent yes` on `Host *`).
 If the clone fails:
 
 ```bash
-git clone git@github.com:advarshney/dotfiles-secrets.git ~/.config/dotfiles-secrets
+git clone git@github.com:adarshdotexe/dotfiles-secrets.git ~/.config/dotfiles-secrets
 ```
 
 Then `exec zsh -l`.

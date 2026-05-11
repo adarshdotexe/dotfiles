@@ -7,7 +7,7 @@ tmux + oh-my-tmux, sesh, zoxide, fzf, mise.
 ## One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/advarshney/dotfiles/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adarshdotexe/dotfiles/main/bootstrap.sh | bash
 exec zsh -l
 ```
 
@@ -21,7 +21,7 @@ exec zsh -l
 4. Installs **oh-my-zsh** + custom plugins (`zsh-autosuggestions`, `zsh-syntax-highlighting`) + **Powerlevel10k**.
 5. Clones **oh-my-tmux** (`gpakosz/.tmux`) and symlinks `~/.tmux.conf` to its upstream file.
 6. Runs `link.sh`, which symlinks every file under `zsh/`, `tmux/`, `sesh/`, `git/`, `mise/` into `$HOME`, preserving directory structure.
-7. Clones the **private** secrets repo `advarshney/dotfiles-secrets` to `~/.config/dotfiles-secrets/` (requires SSH-agent access).
+7. Clones the **private** secrets repo `adarshdotexe/dotfiles-secrets` to `~/.config/dotfiles-secrets/` (requires SSH-agent access).
 8. Adds an idempotent `@import` line to `~/.claude/CLAUDE.md` pointing at `claude/CLAUDE.md` so every Claude session knows to edit *this* repo, not the live files.
 9. `mise install` to materialize pinned tools (e.g. `bun`).
 
@@ -72,7 +72,7 @@ cd ~/repos/dotfiles && git pull && ./link.sh && exec zsh -l
 ## Secrets
 
 API keys and tokens live in a separate **private** repo,
-`advarshney/dotfiles-secrets`, cloned at `~/.config/dotfiles-secrets/`. The
+`adarshdotexe/dotfiles-secrets`, cloned at `~/.config/dotfiles-secrets/`. The
 committed `.zshrc` sources `secrets.zsh` from there if present. See
 `docs/secrets.md`.
 

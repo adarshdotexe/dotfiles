@@ -60,4 +60,4 @@ keeps working on every other host.
 Anything that looks like an API key, token, or credential (`*_API_KEY`,
 `*_TOKEN`, `GITHUB_TOKEN`, `GITLAB_TOKEN`, `ANTHROPIC_API_KEY`, etc.) **never**
 goes into `~/repos/dotfiles/`. Direct the user to put it in the private
-`advarshney/dotfiles-secrets` repo, cloned at `~/.config/dotfiles-secrets/`.
+`adarshdotexe/dotfiles-secrets` repo, cloned at `~/.config/dotfiles-secrets/`.
