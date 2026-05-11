@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Portable dev environment bootstrap.
-# Works with or without sudo. Idempotent.
+# Works with or without sudo. Idempotent. Designed for Rocky 8 + NVIDIA xterms
+# (BAN, SC, ...) and WSL/Ubuntu/macOS.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/advarshney/dotfiles/main/bootstrap.sh | bash
@@ -8,16 +9,20 @@
 # Env overrides:
 #   DOTFILES_REPO=https://github.com/advarshney/dotfiles.git
 #   DOTFILES_DIR=$HOME/repos/dotfiles
+#   SECRETS_REPO=git@github.com:advarshney/dotfiles-secrets.git
+#   SECRETS_DIR=$HOME/.config/dotfiles-secrets
+#   SKIP_SECRETS=1     # don't try to clone the secrets repo
 
 set -euo pipefail
 
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/advarshney/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/repos/dotfiles}"
+SECRETS_REPO="${SECRETS_REPO:-git@github.com:advarshney/dotfiles-secrets.git}"
+SECRETS_DIR="${SECRETS_DIR:-$HOME/.config/dotfiles-secrets}"
 LOCAL_BIN="$HOME/.local/bin"
 MAMBA_ROOT="$HOME/.local/micromamba"
 MAMBA_ENV="$MAMBA_ROOT/envs/dotfiles"
 export PATH="$LOCAL_BIN:$MAMBA_ENV/bin:$PATH"
-
 mkdir -p "$LOCAL_BIN"
 
 c_blue=$'\033[1;34m'; c_yellow=$'\033[1;33m'; c_red=$'\033[1;31m'; c_off=$'\033[0m'
@@ -35,7 +40,6 @@ detect_pm() {
   echo none
 }
 
-# tmux >= 3.2 is needed for sesh's popup picker
 tmux_ok() {
   local v
   v=$(tmux -V 2>/dev/null | awk '{print $2}') || return 1
@@ -55,6 +59,21 @@ ensure_repo() {
   else
     log "Updating dotfiles in $DOTFILES_DIR"
     git -C "$DOTFILES_DIR" pull --ff-only 2>/dev/null || warn "git pull skipped"
+  fi
+}
+
+ensure_secrets_repo() {
+  [[ "${SKIP_SECRETS:-0}" == "1" ]] && { log "SKIP_SECRETS=1, skipping secrets clone"; return; }
+  mkdir -p "$(dirname "$SECRETS_DIR")"
+  if [[ ! -d "$SECRETS_DIR/.git" ]]; then
+    log "Cloning dotfiles-secrets -> $SECRETS_DIR  (needs SSH agent access to private repo)"
+    if ! git clone "$SECRETS_REPO" "$SECRETS_DIR" 2>/dev/null; then
+      warn "Could not clone secrets repo (private; requires SSH agent forwarding)."
+      warn "Create it later, or write ~/.zshrc.local manually with your exports."
+    fi
+  else
+    log "Updating secrets repo"
+    git -C "$SECRETS_DIR" pull --ff-only 2>/dev/null || warn "secrets git pull skipped"
   fi
 }
 
@@ -81,8 +100,7 @@ install_micromamba() {
     Darwin-arm64)   arch=osx-arm64 ;;
     *) err "Unsupported platform: $(uname -s)-$(uname -m)"; return 1 ;;
   esac
-  local tmp
-  tmp=$(mktemp -d)
+  local tmp; tmp=$(mktemp -d)
   curl -fLs "https://micro.mamba.pm/api/micromamba/${arch}/latest" \
     | tar -xj -C "$tmp" bin/micromamba
   mv -f "$tmp/bin/micromamba" "$LOCAL_BIN/micromamba"
@@ -96,7 +114,48 @@ mamba_install() {
   "$LOCAL_BIN/micromamba" install -y -p "$MAMBA_ENV" -c conda-forge "$@"
 }
 
+# ------------------------------------------------------------------ oh-my-tmux
+install_oh_my_tmux() {
+  if [[ ! -d "$HOME/.tmux/.git" ]]; then
+    log "Installing oh-my-tmux (gpakosz/.tmux)"
+    git clone --single-branch https://github.com/gpakosz/.tmux.git "$HOME/.tmux"
+  else
+    log "Updating oh-my-tmux"
+    git -C "$HOME/.tmux" pull --ff-only 2>/dev/null || warn "oh-my-tmux pull skipped"
+  fi
+  # Upstream provides ~/.tmux/.tmux.conf — symlink to ~/.tmux.conf.
+  if [[ ! -L "$HOME/.tmux.conf" || "$(readlink "$HOME/.tmux.conf")" != "$HOME/.tmux/.tmux.conf" ]]; then
+    [[ -e "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]] && \
+      mv "$HOME/.tmux.conf" "$HOME/.tmux.conf.bootstrap-backup.$(date +%s)"
+    ln -sfn "$HOME/.tmux/.tmux.conf" "$HOME/.tmux.conf"
+  fi
+}
+
+install_powerlevel10k() {
+  local dst="$HOME/.oh-my-zsh/custom/themes/powerlevel10k"
+  if [[ ! -d "$dst/.git" ]]; then
+    log "Installing powerlevel10k theme"
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$dst"
+  else
+    log "Updating powerlevel10k"
+    git -C "$dst" pull --ff-only 2>/dev/null || warn "p10k pull skipped"
+  fi
+}
+
+# ------------------------------------------------------------------ claude rule
+wire_claude_rule() {
+  local claude_md="$HOME/.claude/CLAUDE.md"
+  local import_line="@$DOTFILES_DIR/claude/CLAUDE.md"
+  mkdir -p "$HOME/.claude"
+  touch "$claude_md"
+  if ! grep -qxF "$import_line" "$claude_md"; then
+    log "Adding dotfiles @import to $claude_md"
+    printf '\n# === dotfiles workflow rule (managed by bootstrap.sh) ===\n%s\n' "$import_line" >> "$claude_md"
+  fi
+}
+
 # ------------------------------------------------------------------ go
+
 ensure_repo
 
 # Stage 1: try system install where possible.
@@ -125,18 +184,11 @@ if ! has mise; then
   log "Installing mise"
   curl -fsSL https://mise.run | MISE_INSTALL_PATH="$LOCAL_BIN/mise" sh
 fi
-
 if ! has zoxide; then
   log "Installing zoxide"
   curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh \
     | bash -s -- --bin-dir "$LOCAL_BIN"
 fi
-
-if ! has starship; then
-  log "Installing starship"
-  curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$LOCAL_BIN" >/dev/null
-fi
-
 if ! has fzf; then
   log "Installing fzf"
   rm -rf "$HOME/.fzf"
@@ -144,13 +196,12 @@ if ! has fzf; then
   "$HOME/.fzf/install" --bin --no-update-rc >/dev/null
   ln -sf "$HOME/.fzf/bin/fzf" "$LOCAL_BIN/fzf"
 fi
-
 if ! has sesh; then
   log "Installing sesh"
   case "$(uname -m)" in
-    x86_64)  SA=x86_64 ;;
+    x86_64)        SA=x86_64 ;;
     aarch64|arm64) SA=arm64 ;;
-    *) SA=$(uname -m) ;;
+    *)             SA=$(uname -m) ;;
   esac
   VER=$(curl -fsSL https://api.github.com/repos/joshmedeski/sesh/releases/latest \
         | awk -F'"' '/"tag_name":/{print $4; exit}')
@@ -159,11 +210,7 @@ if ! has sesh; then
   chmod +x "$LOCAL_BIN/sesh"
 fi
 
-# Stage 4: link configs (creates $HOME/.zshrc symlink before oh-my-zsh runs).
-log "Linking configs"
-"$DOTFILES_DIR/link.sh"
-
-# Stage 5: oh-my-zsh + custom plugins.
+# Stage 4: oh-my-zsh + plugins + powerlevel10k.
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
   log "Installing oh-my-zsh"
   RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
@@ -173,30 +220,42 @@ fi
 ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
 clone_omz_plugin() {
   local repo="$1" dest="$2"
-  [[ -d "$dest" ]] || git clone --depth 1 "https://github.com/$repo.git" "$dest"
+  [[ -d "$dest/.git" ]] || git clone --depth 1 "https://github.com/$repo.git" "$dest"
 }
 clone_omz_plugin zsh-users/zsh-autosuggestions     "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 clone_omz_plugin zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-clone_omz_plugin Aloxaf/fzf-tab                    "$ZSH_CUSTOM/plugins/fzf-tab"
+install_powerlevel10k
 
-# Stage 6: mise install pinned runtimes (skip if no network or slow).
+# Stage 5: oh-my-tmux upstream (~/.tmux + ~/.tmux.conf symlink).
+install_oh_my_tmux
+
+# Stage 6: link committed configs into $HOME (.zshrc, .zshenv, .aliases,
+# .p10k.zsh, .tmux.conf.local, .gitconfig, mise/sesh under ~/.config/).
+log "Linking configs"
+"$DOTFILES_DIR/link.sh"
+
+# Stage 7: secrets repo (after link, so .zshrc is ready to source it).
+ensure_secrets_repo
+
+# Stage 8: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
+wire_claude_rule
+
+# Stage 9: mise install pinned tools (e.g. bun on hosts without it).
 if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
-  log "Installing mise-managed runtimes (this can take a few minutes)"
-  mise install 2>&1 | tail -5 || warn "mise install had problems; rerun 'mise install' later"
+  log "mise install (pinned tools)"
+  mise install 2>&1 | tail -3 || warn "mise install had problems; rerun later"
 fi
 
 cat <<'EOF'
 
 [bootstrap] Done.
 
-Next steps:
-  1. Ensure ~/.local/bin is in PATH for non-login shells:
-       export PATH="$HOME/.local/bin:$PATH"
-     (your dotfiles .zshenv already does this)
-  2. Start a fresh shell:
-       exec zsh -l
-  3. From inside tmux, hit  Prefix + K  to open the sesh session picker.
+Next:
+  exec zsh -l
+  # First p10k run will print 'p10k configure' hint — your ~/.p10k.zsh is
+  # already linked, so just answer 'y' if asked, or hit Enter to keep it.
 
-If you installed userland micromamba tools, $HOME/.local/micromamba/envs/dotfiles/bin
-is also on your PATH automatically via .zshenv.
+If the secrets clone failed (private repo permissions / no agent):
+  mkdir -p ~/.config/dotfiles-secrets
+  git clone git@github.com:advarshney/dotfiles-secrets.git ~/.config/dotfiles-secrets
 EOF

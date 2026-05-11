@@ -1,8 +1,8 @@
 default_session = { startup_command = "" }
 
-# ---- Configured project sessions ----
-# Add or remove entries here for the projects you switch between most.
-# `path` can be a literal path or a tilde-expanded one.
+# Add or remove configured project sessions here. Paths use ~ for portability;
+# entries whose path does not exist on a given host are just skipped by sesh.
+# zoxide directories and ssh hosts are pulled in automatically by `sesh list`.
 
 [[session]]
 name = "home"
@@ -31,5 +31,3 @@ startup_command = "claude"
 name = "power-arch-claude-plugins"
 path = "~/repos/power-arch-claude-plugins"
 startup_command = "claude"
-
-# zoxide and ssh hosts are pulled in dynamically by `sesh list` — no config needed.

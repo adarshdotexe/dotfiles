@@ -1,78 +1,90 @@
 # dotfiles
 
-Portable dev environment for any Linux host (Rocky 8, Ubuntu, WSL, etc.), with or without sudo.
+Portable dev environment for any Linux host (Rocky 8 with no sudo, Ubuntu,
+macOS, WSL). Mirrors Adarsh's BAN setup: zsh + oh-my-zsh + Powerlevel10k,
+tmux + oh-my-tmux, sesh, zoxide, fzf, mise.
 
 ## One-line install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/advarshney/dotfiles/main/bootstrap.sh | bash
-```
-
-Then:
-
-```bash
 exec zsh -l
 ```
 
-## What you get
+## What bootstrap does
 
-| Tool | Purpose |
-|---|---|
-| `zsh` + oh-my-zsh + autosuggestions + syntax-highlighting + fzf-tab | shell |
-| `starship` | prompt |
-| `tmux` (>=3.2) | terminal multiplexer |
-| `sesh` | tmux session manager (zoxide + ssh hosts + configured projects) |
-| `zoxide` | smarter `cd` |
-| `mosh` | resilient SSH |
-| `mise` | manages `node`, `bun`, `deno`, `python`, `uv` |
-| `fzf` | fuzzy finder used by everything |
-
-## How it works on no-sudo hosts (BAN, SC, etc.)
-
-The bootstrap detects whether `sudo` is available. If not:
-
-- `mosh-server`, `tmux` (when system version is too old), and `zsh` (when missing) are installed into a userland `micromamba` env at `~/.local/micromamba/envs/dotfiles/bin`
-- All other tools land in `~/.local/bin/`
-- Nothing is written outside `$HOME`
-
-## Authenticating on new hosts
-
-Your SSH config already has `ForwardAgent yes` on `Host *`. As long as your local
-`ssh-agent` has your GitHub key loaded, `git clone` and `git push` over SSH "just
-work" on BAN, SC, and anywhere else you reach via your ssh config.
-
-Local one-time setup on Windows:
-
-```powershell
-Get-Service ssh-agent | Set-Service -StartupType Automatic
-Start-Service ssh-agent
-ssh-add $env:USERPROFILE\.ssh\id_ed25519     # or whichever key you use for GitHub
-```
-
-For WSL, see `docs/wsl-windows-terminal.md`.
+1. Clones this repo to `~/repos/dotfiles`.
+2. Installs missing tools:
+   - **sudo + apt/dnf available** → system install of `git curl tmux zsh mosh`.
+   - **no sudo** → falls back to userland `micromamba` env at `~/.local/micromamba/envs/dotfiles/`.
+3. Drops single-binary userland tools into `~/.local/bin`: `mise`, `zoxide`, `fzf`, `sesh`.
+4. Installs **oh-my-zsh** + custom plugins (`zsh-autosuggestions`, `zsh-syntax-highlighting`) + **Powerlevel10k**.
+5. Clones **oh-my-tmux** (`gpakosz/.tmux`) and symlinks `~/.tmux.conf` to its upstream file.
+6. Runs `link.sh`, which symlinks every file under `zsh/`, `tmux/`, `sesh/`, `git/`, `mise/` into `$HOME`, preserving directory structure.
+7. Clones the **private** secrets repo `advarshney/dotfiles-secrets` to `~/.config/dotfiles-secrets/` (requires SSH-agent access).
+8. Adds an idempotent `@import` line to `~/.claude/CLAUDE.md` pointing at `claude/CLAUDE.md` so every Claude session knows to edit *this* repo, not the live files.
+9. `mise install` to materialize pinned tools (e.g. `bun`).
 
 ## Layout
 
 ```
 dotfiles/
-├── bootstrap.sh                  one-shot installer (idempotent)
-├── link.sh                       symlinks each subdir into $HOME
-├── zsh/                          .zshrc, .zshenv, .zsh/*.zsh fragments
-├── tmux/                         .tmux.conf
-├── sesh/                         .config/sesh/sesh.toml
-├── git/                          .gitconfig, .gitignore_global
-├── mise/                         .config/mise/config.toml
-├── starship/                     .config/starship.toml
-└── docs/                         phase-2 / WSL / Windows Terminal notes
+├── bootstrap.sh                installer (sudo-optional, idempotent)
+├── link.sh                     symlinks each package into $HOME
+├── README.md
+├── zsh/
+│   ├── .zshrc                  portable; host-specific dirs guarded with [[ -d ... ]]
+│   ├── .zshenv                 PATH + env for all zsh invocations
+│   ├── .aliases                sourced from .zshrc
+│   ├── .p10k.zsh               Powerlevel10k user config
+│   └── .zsh/completions/       runtime-generated sesh completion etc.
+├── tmux/
+│   └── .tmux.conf.local        oh-my-tmux overrides (upstream .tmux.conf is symlinked)
+├── sesh/.config/sesh/sesh.toml
+├── git/
+│   ├── .gitconfig
+│   └── .gitignore_global
+├── mise/.config/mise/config.toml
+├── claude/CLAUDE.md            the dotfiles-workflow rule, imported into global ~/.claude/CLAUDE.md
+└── docs/
+    ├── secrets.md              how the private dotfiles-secrets repo works
+    └── wsl-windows-terminal.md mosh client + WT profiles (Phase 2)
 ```
 
-To add a tool: create a new top-level dir matching the layout under `$HOME`, add
-its name to the `PKGS` list in `link.sh`, commit.
+## Editing rule
 
-## Updating an installed host
+**Don't edit `~/.zshrc` directly. Edit `~/repos/dotfiles/zsh/.zshrc` and push.**
+
+After bootstrap, that rule is enforced by the global Claude rule in
+`claude/CLAUDE.md` — Claude will route edits through the repo automatically.
 
 ```bash
-cd ~/repos/dotfiles && git pull && ./link.sh
+cd ~/repos/dotfiles
+$EDITOR zsh/.zshrc
+git diff
+git commit -am "your message"
+git push
+
+# On every host that needs the change:
+cd ~/repos/dotfiles && git pull && ./link.sh && exec zsh -l
 ```
 
-Or just rerun the one-liner — `bootstrap.sh` is idempotent.
+## Secrets
+
+API keys and tokens live in a separate **private** repo,
+`advarshney/dotfiles-secrets`, cloned at `~/.config/dotfiles-secrets/`. The
+committed `.zshrc` sources `secrets.zsh` from there if present. See
+`docs/secrets.md`.
+
+## SSH auth across hosts
+
+`Host *` in your `~/.ssh/config` already has `ForwardAgent yes`. As long as
+your Windows ssh-agent has your GitHub SSH key loaded (one-time:
+`Get-Service ssh-agent | Set-Service -StartupType Automatic; Start-Service ssh-agent; ssh-add`),
+both repos (public and private) clone over SSH from BAN/SC without per-host
+token setup.
+
+## Per-host overrides
+
+If a host needs config that doesn't belong in git (one-off env, machine-specific
+path), drop it in `~/.zshrc.local`. The committed `.zshrc` sources it last.

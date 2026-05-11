@@ -1,0 +1,36 @@
+# ~/.aliases - ZSH aliases and functions
+# Sourced by ~/.zshrc
+
+# Tools
+alias cds="cd /home/scratch.advarshney_gpu/"
+alias aider='/home/scratch.advarshney_gpu/venv_3.10/bin/python3 -m aider'
+alias proto_pilot='/home/nv/utils/chipnemo-qa-bot/release/proto_pilot'
+alias jira='uvx --with jira --with streamlit streamlit run ~/.local/jira_streamlit/dev/power/APADEV/Core_Frameworks/Jira/st_gui.py'
+alias lwpe_server="nvrun python3 run_server.py"
+alias cat="/home/utils/bat-0.23.0/bin/bat"
+
+# General purpose
+alias c='clear'
+alias g='grep'
+alias h='history'
+alias dir='ls -l'
+alias hg='h | g'
+alias po='popd'
+alias pu='pushd'
+alias :q='exit'
+alias igrep='grep -i'
+alias lc='wc -l'
+
+# Application-specific
+alias view='vile -R'
+alias dos2unix="perl -pi -e 's/\\cM//g;'"
+alias unix2dos="perl -pi -e 's/\\n/\\cM\\n/m;'"
+
+# Tmux launcher — no args runs ~/tmux_launch.sh, with args passes through to real tmux
+tmux() {
+    if [ $# -eq 0 ]; then
+        sh ~/tmux_launch.sh
+    else
+        command tmux "$@"
+    fi
+}

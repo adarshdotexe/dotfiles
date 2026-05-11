@@ -1,14 +1,10 @@
-# Pinned runtimes installed by `mise install` on every host.
-# `mise activate` (in .zshrc) shims them automatically.
+# Tools managed by mise. The host's own /home/utils Python/Node/UV are kept
+# in PATH and used by default; mise fills the gaps (notably bun, missing on BAN).
+# Run `mise install` after bootstrap to materialize these.
 
 [tools]
-node   = "lts"
-bun    = "latest"
-deno   = "latest"
-python = "3.12"
-uv     = "latest"
+bun = "latest"
 
 [settings]
-experimental = true
 auto_install = true
-quiet = false
+quiet = true

@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Symlinks the contents of each "package" subdir into $HOME, mirroring layout.
 # Backs up any pre-existing real files to .backup.<timestamp>.
-#
-# Replaces GNU stow so we have one less dependency on locked-down hosts.
 
 set -euo pipefail
 
+if [[ -z "${HOME:-}" ]]; then
+  echo "link.sh: \$HOME is empty; refusing to link" >&2
+  exit 1
+fi
+
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PKGS=(zsh tmux sesh git mise starship)
+PKGS=(zsh tmux sesh git mise)
 
 ts=$(date +%s)
 backup_one() {
@@ -25,6 +28,8 @@ for pkg in "${PKGS[@]}"; do
   [[ -d "$pkgdir" ]] || continue
   while IFS= read -r -d '' src; do
     rel="${src#$pkgdir/}"
+    # Skip the placeholder used to keep empty dirs in git.
+    [[ "$(basename "$src")" == ".gitkeep" ]] && continue
     dest="$HOME/$rel"
     mkdir -p "$(dirname "$dest")"
     backup_one "$dest"
