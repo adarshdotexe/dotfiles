@@ -122,6 +122,11 @@ mamba_install() {
 
 # ------------------------------------------------------------------ oh-my-tmux
 install_oh_my_tmux() {
+  if [[ -d "$HOME/.tmux" && ! -d "$HOME/.tmux/.git" ]]; then
+    local bak="$HOME/.tmux.bootstrap-backup.$(date +%s)"
+    warn "Existing $HOME/.tmux is not a git repo; moving to $bak"
+    mv "$HOME/.tmux" "$bak"
+  fi
   if [[ ! -d "$HOME/.tmux/.git" ]]; then
     log "Installing oh-my-tmux (gpakosz/.tmux)"
     git clone --single-branch https://github.com/gpakosz/.tmux.git "$HOME/.tmux"
