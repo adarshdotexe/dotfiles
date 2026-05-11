@@ -249,7 +249,7 @@ install_oh_my_tmux
 # Stage 6: link committed configs into $HOME (.zshrc, .zshenv, .aliases,
 # .p10k.zsh, .tmux.conf.local, .gitconfig, mise/sesh under ~/.config/).
 log "Linking configs"
-"$DOTFILES_DIR/link.sh"
+bash "$DOTFILES_DIR/link.sh"
 
 # Stage 7: secrets repo (after link, so .zshrc is ready to source it).
 ensure_secrets_repo
