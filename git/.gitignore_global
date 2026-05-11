@@ -1,0 +1,25 @@
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.history/
+.cache/
+
+# Env
+.env
+.env.local
+.envrc
+.direnv/
+
+# Common build artifacts that creep into home dirs by accident
+__pycache__/
+*.pyc
+node_modules/
+.venv/

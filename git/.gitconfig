@@ -1,0 +1,52 @@
+[user]
+    name = Adarsh Varshney
+    email = advarshney@nvidia.com
+
+[init]
+    defaultBranch = main
+
+[core]
+    excludesFile = ~/.gitignore_global
+    editor = vim
+    autocrlf = input
+
+[pull]
+    rebase = true
+
+[push]
+    autoSetupRemote = true
+    default = current
+
+[fetch]
+    prune = true
+
+[rebase]
+    autoStash = true
+    updateRefs = true
+
+[diff]
+    colorMoved = default
+    algorithm = histogram
+
+[merge]
+    conflictStyle = zdiff3
+
+[color]
+    ui = auto
+
+[alias]
+    s    = status -sb
+    co   = checkout
+    sw   = switch
+    cm   = commit -m
+    cane = commit --amend --no-edit
+    l    = log --oneline --decorate --graph -20
+    ll   = log --oneline --decorate --graph --all -30
+    last = log -1 HEAD --stat
+    unstage = reset HEAD --
+    amend = commit --amend
+    aliases = !git config --get-regexp '^alias\\.' | sed -e 's/^alias\\.//' -e 's/ / = /'
+
+# Per-host overrides (work email, gitlab, etc.) live outside the repo.
+[include]
+    path = ~/.gitconfig.local

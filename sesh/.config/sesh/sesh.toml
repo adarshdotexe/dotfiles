@@ -1,0 +1,35 @@
+default_session = { startup_command = "" }
+
+# ---- Configured project sessions ----
+# Add or remove entries here for the projects you switch between most.
+# `path` can be a literal path or a tilde-expanded one.
+
+[[session]]
+name = "home"
+path = "~"
+
+[[session]]
+name = "dotfiles"
+path = "~/repos/dotfiles"
+
+[[session]]
+name = "AdarshOS"
+path = "~/AdarshOS"
+startup_command = "claude"
+
+[[session]]
+name = "frappe (UFLWPE)"
+path = "~/repos/frappe"
+startup_command = "claude"
+
+[[session]]
+name = "pace"
+path = "~/repos/power-architecture-chat-engine"
+startup_command = "claude"
+
+[[session]]
+name = "power-arch-claude-plugins"
+path = "~/repos/power-arch-claude-plugins"
+startup_command = "claude"
+
+# zoxide and ssh hosts are pulled in dynamically by `sesh list` — no config needed.

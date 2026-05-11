@@ -1,0 +1,14 @@
+# Pinned runtimes installed by `mise install` on every host.
+# `mise activate` (in .zshrc) shims them automatically.
+
+[tools]
+node   = "lts"
+bun    = "latest"
+deno   = "latest"
+python = "3.12"
+uv     = "latest"
+
+[settings]
+experimental = true
+auto_install = true
+quiet = false
