@@ -473,6 +473,17 @@ bindkey -c "^T" 'termgpt-interactive'
 
 # END termgpt integration
 
+# Userland tool dirs — needed so ssh-launched commands (e.g. mosh-server
+# installed via micromamba) are found on $PATH. Missing dirs skipped.
+foreach _d ( \
+    "$HOME/.local/bin" \
+    "$HOME/.local/share/mise/shims" \
+    "$HOME/.local/micromamba/envs/dotfiles/bin" \
+)
+  if (-d "$_d") set path = ( "$_d" $path:q )
+end
+unset _d
+
 # Anthropic / Claude Code (non-secret URL + model). API key in secrets.csh.
 setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
 setenv ANTHROPIC_MODEL aws/anthropic/bedrock-claude-opus-4-7
