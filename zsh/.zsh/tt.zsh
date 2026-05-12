@@ -114,7 +114,10 @@ tt() {
   esac
 
   local picked
-  if [[ -n "$1" ]]; then
+  if [[ -n "$1" && -n "$2" ]]; then
+    # Two args: direct launch of HOST + SESSION (create entry if new).
+    picked="$1	$2"
+  elif [[ -n "$1" ]]; then
     # Fuzzy substring match against "host session", pick top-ranked
     picked=$(_tt_score_awk "$db" | awk -F'\t' -v q="$1" '
       tolower($2 " " $3) ~ tolower(q) { print $2 "\t" $3; exit }

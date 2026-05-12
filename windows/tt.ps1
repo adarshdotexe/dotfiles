@@ -118,6 +118,8 @@ function tt {
     param(
         [Parameter(ParameterSetName = 'Pick', Position = 0)]
         [string] $Query,
+        [Parameter(ParameterSetName = 'Pick', Position = 1)]
+        [string] $SessionArg,
 
         [Parameter(ParameterSetName = 'Add')]
         [switch] $a,
@@ -170,7 +172,14 @@ function tt {
     $ranked = $db.Values | Sort-Object -Property @{Expression={_Tt-Score $_ $now}; Descending=$true}
 
     $pickedEntry = $null
-    if ($Query) {
+    if ($Query -and $SessionArg) {
+        # Two args: direct launch of HOST + SESSION. Create entry if new.
+        $key = "${Query}`t${SessionArg}"
+        if (-not $db.ContainsKey($key)) {
+            $db[$key] = [PSCustomObject]@{ Host=$Query; Session=$SessionArg; Rank=0.0; LastUsed=[int64]0 }
+        }
+        $pickedEntry = $db[$key]
+    } elseif ($Query) {
         $pickedEntry = $ranked | Where-Object {
             ("$($_.Host) $($_.Session)") -like "*$Query*"
         } | Select-Object -First 1
