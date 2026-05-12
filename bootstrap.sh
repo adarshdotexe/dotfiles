@@ -396,6 +396,7 @@ fi
 
 # Stage 3a: EternalTerminal + tt helpers.
 install_eternal_terminal || warn "EternalTerminal install failed; tt won't connect remotely until fixed"
+install_tt_helper tt-launch     windows/tt-launch.sh
 install_tt_helper tt-open       windows/tt-open.sh
 install_tt_helper tt-et-launch  windows/tt-et-launch.sh
 install_tt_helper tt-listener   windows/tt-listener.py

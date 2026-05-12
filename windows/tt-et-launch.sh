@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
-# tt-et-launch HOST SESSION B64
-# WSL-side wrapper. Bootstraps etserver on HOST via SSH (idempotent), then
-# `et`'s with a reverse tunnel for URL forwarding and runs the base64-encoded
-# tt-launch helper to attach the tmux session.
+# tt-et-launch HOST SESSION
+# WSL-side wrapper. Bootstraps etserver on HOST via SSH (idempotent), spawns
+# the local URL-bridge listener if needed, then et's with a reverse tunnel.
 #
 # Deployed by bootstrap.sh as ~/.local/bin/tt-et-launch (WSL). tt.ps1 and
-# tt.zsh both call this; keeps the Win-side argv flat and the et plumbing
+# tt.zsh both call this — keeps the Win-side argv flat and the et plumbing
 # in one place.
+#
+# tt-launch is also bootstrap-deployed on the remote, so the et command we
+# invoke is just `bash -lc 'TT_HOST_ALIAS=HOST tt-launch SESSION'` — short
+# enough for ET's `-c` to type cleanly into the remote's login shell (csh
+# on BAN/SC/UFLWPE), no base64 / eval gymnastics.
 set -euo pipefail
 
-host="${1:?usage: tt-et-launch HOST SESSION B64}"
-session="${2:?usage: tt-et-launch HOST SESSION B64}"
-b64="${3:?usage: tt-et-launch HOST SESSION B64}"
+host="${1:?usage: tt-et-launch HOST SESSION}"
+session="${2:?usage: tt-et-launch HOST SESSION}"
 
 ET_PORT="${TT_ET_PORT:-2022}"
 OPEN_PORT="${TT_OPEN_PORT:-8765}"
 
-# Validate session name — keeps the inner single-quote bash arg safe and stops
-# anything that could leak past our quoting.
+# Validate session name — keeps the inner bash arg safe and stops anything
+# that could leak through quoting.
 case "$session" in
   -*) echo "tt-et-launch: session must not start with '-'" >&2; exit 2 ;;
 esac
@@ -25,12 +28,10 @@ esac
   || { echo "tt-et-launch: invalid session name '$session'" >&2; exit 2; }
 
 # 1. Start the local URL-bridge listener (idempotent — self-checks port).
-#    ET runs in WSL, so the -rt tunnel's destination is WSL's localhost; the
-#    listener has to be here, not on the Windows host. The listener invokes
-#    `cmd.exe /c start <url>` to open the URL in the default Windows browser.
-#    bootstrap.sh installs ~/.local/bin/tt-listener as a symlink to the .py.
+#    ET runs in WSL, so the -r tunnel's destination is WSL's localhost; the
+#    listener has to be here, not on the Windows host. It invokes
+#    `cmd.exe /c start <url>` to open URLs in the default Windows browser.
 if command -v tt-listener >/dev/null 2>&1; then
-  # Cheap port probe — anything already listening on $OPEN_PORT counts.
   if ! (exec 3<>/dev/tcp/127.0.0.1/"$OPEN_PORT") 2>/dev/null; then
     TT_OPEN_PORT="$OPEN_PORT" nohup tt-listener \
       >/tmp/tt-listener.log 2>&1 < /dev/null &
@@ -41,13 +42,10 @@ if command -v tt-listener >/dev/null 2>&1; then
   fi
 fi
 
-# 2. Make sure etserver is running on the remote. SSH is fast enough (existing
-#    ControlPersist on the user's ssh-config keeps this near-instant after the
-#    first hit), and starting etserver via SSH is the cleanest no-sudo
-#    bootstrap on these hosts.
-#    NOTE: we don't pass --daemon — that flag tries to write /var/run/etserver.pid
-#    which is root-only on Rocky 8. Plain `nohup ... &` plus stdio redirection
-#    detaches just as well.
+# 2. Make sure etserver is running on the remote. SSH is fast enough — and
+#    starting via SSH is the cleanest no-sudo bootstrap on these hosts.
+#    NOTE: we don't pass --daemon — that wants /var/run/etserver.pid which
+#    is root-only. nohup + stdio redirection detaches just as well.
 ssh -o ConnectTimeout=10 "$host" "bash -lc '\
   pgrep -u \$USER etserver >/dev/null \
   || nohup ~/.local/bin/etserver --port $ET_PORT >/tmp/etserver.log 2>&1 < /dev/null & \
@@ -56,33 +54,12 @@ ssh -o ConnectTimeout=10 "$host" "bash -lc '\
     exit 1
 }
 
-# 2. Build the remote shell payload (mirrors tt.ps1 / tt.zsh).
-#    - TT_HOST_ALIAS so tmux titles render the alias not the container hostname
-#    - BROWSER=tt-open so xdg-open / python webbrowser / etc. POST to our
-#      Windows-side listener via the et -r tunnel below
-#    - decode b64 -> ~/.local/bin/tt-launch -> exec bash <file> SESSION
-inner="export TT_HOST_ALIAS='$host' \
-&& export BROWSER=tt-open \
-&& export TT_OPEN_PORT='$OPEN_PORT' \
-&& mkdir -p ~/.local/bin \
-&& echo $b64 | base64 -d > ~/.local/bin/tt-launch \
-&& chmod 0755 ~/.local/bin/tt-launch \
-&& exec bash ~/.local/bin/tt-launch '$session'"
-
-# 3. Wrap the bash-syntax inner in `bash -c '...'` because ET's `-c` arg runs
-#    inside the user's login shell on the remote — csh on BAN/SC/UFLWPE,
-#    which barfs on `export`/`&&`/etc. The base64-encode-then-eval pattern
-#    keeps the inner command opaque to csh (single-quoted token, no $ or
-#    metachars exposed) and bash decodes + evals it once it runs.
-inner_b64=$(printf '%s' "$inner" | base64 -w0)
-et_cmd="bash -c 'eval \"\$(echo $inner_b64 | base64 -d)\"'"
-
-# 4. et with reverse tunnel: remote port OPEN_PORT -> local OPEN_PORT.
-#    ET's tunnel syntax is `srcPort:dstPort` (two parts), not the ssh-style
-#    `srcPort:host:dstPort` — bind address defaults to localhost on both ends.
-#    Use `-r` (short for --reversetunnel), NOT `-rt`. ET 6.2.11 parses `-rt`
-#    as `-r t…` and fails with "Tunnel argument must have source and
-#    destination between a ':'".
+# 3. et with reverse tunnel + short remote command. ET's `-c` arg gets typed
+#    into the user's remote login shell (csh on BAN/SC/UFLWPE), so we keep
+#    the command short and csh-safe by deferring everything to
+#    ~/.local/bin/tt-launch (deployed by bootstrap on the remote).
+#    Tunnel syntax is `srcPort:dstPort` (NOT ssh-style src:host:dst), and
+#    we use `-r` (not `-rt`, which ET 6.2.11 misparses as `-r t…`).
 exec et "${host}:${ET_PORT}" \
   -r "${OPEN_PORT}:${OPEN_PORT}" \
-  -c "$et_cmd"
+  -c "bash -lc 'TT_HOST_ALIAS=$host tt-launch $session'"
