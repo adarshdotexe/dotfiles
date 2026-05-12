@@ -383,6 +383,11 @@ set -g allow-passthrough on
 set -s extended-keys on
 set -as terminal-features 'xterm*:extkeys'
 
+# Propagate TT_HOST_ALIAS from the attaching client into the session env so
+# #{E:TT_HOST_ALIAS} in set-titles-string finds it even when sesh attaches
+# to a pre-existing tmux server.
+set -ag update-environment ' TT_HOST_ALIAS'
+
 
 # -- urlscan -------------------------------------------------------------------
 
