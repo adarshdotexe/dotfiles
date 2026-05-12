@@ -27,15 +27,33 @@ _tt_seed() {
   hosts=$(awk 'tolower($1)=="host"{for(i=2;i<=NF;i++)if($i!~/[*?]/&&$i!="")print $i}' "$cfg" | sort -u)
   sessions=$(printf 'main\n%s\n' "$(awk -F'"' '/^\s*name\s*=\s*"/{print $2}' "$toml")" | sort -u)
 
-  local h s key
+  # Build valid-key set and tmpfile of all current (host, session) combos.
+  local valid=$(mktemp) tmp=$(mktemp)
   for h in ${(f)hosts}; do
     for s in ${(f)sessions}; do
-      key="${h}	${s}"   # tab-separated
-      if ! grep -qF -- "$key	" "$db" 2>/dev/null; then
-        printf '%s\t%s\t0\t0\n' "$h" "$s" >> "$db"
-      fi
+      printf '%s\t%s\n' "$h" "$s" >> "$valid"
     done
   done
+
+  # Keep DB entries that either appear in $valid OR have rank > 0.
+  # Then append any (host, session) from $valid that's not already in DB.
+  awk -F'\t' -v valid="$valid" '
+    BEGIN {
+      while ((getline line < valid) > 0) {
+        split(line, p, "\t"); v[p[1] FS p[2]] = 1
+      }
+    }
+    NF == 4 {
+      k = $1 FS $2
+      if (k in v || ($3 + 0) > 0) { print; have[k] = 1 }
+    }
+    END {
+      for (k in v) if (!(k in have)) {
+        n = split(k, p, FS); print p[1] "\t" p[2] "\t0\t0"
+      }
+    }
+  ' "$db" > "$tmp" && mv "$tmp" "$db"
+  rm -f "$valid"
 }
 
 _tt_score_awk() {

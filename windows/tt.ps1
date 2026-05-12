@@ -90,9 +90,11 @@ function _Tt-Seed {
         }
     }
     $sessions = $sessions | Sort-Object -Unique
+    $valid = @{}
     foreach ($h in $hosts) {
         foreach ($s in $sessions) {
             $key = "${h}`t${s}"
+            $valid[$key] = $true
             if (-not $Db.ContainsKey($key)) {
                 $Db[$key] = [PSCustomObject]@{
                     Host     = $h
@@ -103,6 +105,23 @@ function _Tt-Seed {
             }
         }
     }
+    # Prune rules:
+    #   - Host no longer in ssh config        -> drop (always)
+    #   - Session no longer in sesh.toml      -> drop if rank == 0 (seeded only;
+    #     user's promoted ad-hocs are kept)
+    $validHosts = @{}
+    foreach ($h in $hosts) { $validHosts[$h] = $true }
+    $validSessions = @{}
+    foreach ($s in $sessions) { $validSessions[$s] = $true }
+    $toRemove = @()
+    foreach ($k in $Db.Keys) {
+        $e = $Db[$k]
+        if (-not $validHosts.ContainsKey($e.Host)) { $toRemove += $k; continue }
+        if (-not $validSessions.ContainsKey($e.Session) -and $e.Rank -le 0) {
+            $toRemove += $k
+        }
+    }
+    foreach ($k in $toRemove) { $Db.Remove($k) | Out-Null }
 }
 
 function _Tt-FindWt {
