@@ -90,6 +90,14 @@ tt() {
   _tt_seed
 
   case "$1" in
+    -n)
+      shift
+      local h="$1" s="$2"
+      [[ -n "$h" && -n "$s" ]] || { echo "usage: tt -n HOST SESSION" >&2; return 1; }
+      _tt_promote "$db" "$h" "$s"
+      _tt_launch "$h" "$s"
+      return
+      ;;
     -l)
       printf '%-12s %-10s %-25s %-8s %s\n' 'SCORE' 'RANK' 'AGE' 'HOST' 'SESSION'
       _tt_score_awk "$db" | awk -v now="$(date +%s)" '
@@ -130,15 +138,10 @@ tt() {
       }
     ')
 
-    if [[ -z "$picked" && $# -eq 2 ]]; then
-      # Fallback: `tt HOST NEW_SESSION` — if first arg is exactly a known host,
-      # treat as direct launch (sesh creates the session on the fly).
-      if awk -v h="$1" 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i==h){found=1;exit}} END{exit !found}' "$HOME/.ssh/config" 2>/dev/null; then
-        picked="$1	$2"
-      fi
-    fi
-
-    [[ -z "$picked" ]] && { echo "no match for: $*" >&2; return 1; }
+    [[ -z "$picked" ]] && {
+      echo "no match for: $*  (use 'tt -n HOST SESSION' to launch a new one)" >&2
+      return 1
+    }
   else
     picked=$(_tt_score_awk "$db" \
       | awk -F'\t' '{print $2 "\t" $3}' \

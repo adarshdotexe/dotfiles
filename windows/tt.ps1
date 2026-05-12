@@ -105,11 +105,26 @@ function _Tt-Seed {
     }
 }
 
+function _Tt-FindWt {
+    $cmd = Get-Command wt.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    foreach ($candidate in @(
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe",
+        "$env:USERPROFILE\AppData\Local\Microsoft\WindowsApps\wt.exe"
+    )) { if (Test-Path $candidate) { return $candidate } }
+    return $null
+}
+
 function _Tt-Launch {
     param([PSCustomObject] $E)
     $seshArg   = $E.Session -replace "'", "'\''"
     $remoteCmd = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $($E.Host) -- sesh connect '$seshArg'"
-    & wt.exe -w 0 new-tab --title "$($E.Host):$($E.Session)" `
+    $wt = _Tt-FindWt
+    if (-not $wt) {
+        Write-Error "wt.exe not found. Install Windows Terminal or add it to PATH."
+        return
+    }
+    & $wt -w 0 new-tab --title "$($E.Host):$($E.Session)" `
         wsl.exe --cd '~' -- bash -lc $remoteCmd
 }
 
@@ -120,9 +135,12 @@ function tt {
         [switch] $a,
         [Parameter(ParameterSetName = 'List')]
         [switch] $l,
+        # -n HOST SESSION: explicit "new" — create+launch even if not in db
+        [Parameter(ParameterSetName = 'New')]
+        [switch] $n,
 
-        # All remaining args. In Pick mode they're zoxide-style fuzzy patterns
-        # (all must match). In Add mode they're HOST then SESSION.
+        # All remaining args. Pick: zoxide-style fuzzy patterns (all must match).
+        # Add / New: positional HOST then SESSION.
         [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Patterns
     )
@@ -144,6 +162,24 @@ function tt {
                     Age     = if ($_.LastUsed) { "$([math]::Round(($now - $_.LastUsed) / 60, 0))m" } else { '-' }
                 }
             } | Format-Table
+        return
+    }
+
+    # -n: explicit new — direct launch HOST + SESSION, create if missing
+    if ($PSCmdlet.ParameterSetName -eq 'New') {
+        if (-not $Patterns -or $Patterns.Count -lt 2) {
+            Write-Error "Usage: tt -n HOST SESSION"; return
+        }
+        $newHost    = $Patterns[0]
+        $newSession = $Patterns[1]
+        $key = "${newHost}`t${newSession}"
+        if (-not $db.ContainsKey($key)) {
+            $db[$key] = [PSCustomObject]@{ Host=$newHost; Session=$newSession; Rank=0.0; LastUsed=[int64]0 }
+        }
+        $db[$key].Rank     += 1
+        $db[$key].LastUsed  = $now
+        _Tt-WriteDb $db
+        _Tt-Launch $db[$key]
         return
     }
 
@@ -172,29 +208,19 @@ function tt {
     if ($Patterns -and $Patterns.Count -gt 0) {
         # zoxide-style: every pattern must appear (case-insensitive) somewhere in
         # "<host> <session>". Highest-frecency hit wins.
-        $needles = $Patterns | ForEach-Object { $_.ToLower() }
+        $needles = @($Patterns | ForEach-Object { $_.ToLower() })
         $pickedEntry = $ranked | Where-Object {
             $hs = ("$($_.Host) $($_.Session)").ToLower()
             $ok = $true
-            foreach ($n in $needles) { if (-not $hs.Contains($n)) { $ok = $false; break } }
+            foreach ($needle in $needles) {
+                if (-not $hs.Contains($needle)) { $ok = $false; break }
+            }
             $ok
         } | Select-Object -First 1
 
-        if (-not $pickedEntry -and $Patterns.Count -eq 2) {
-            # Fallback: `tt HOST NEW_SESSION` — if first pattern is exactly a known
-            # host, treat as direct launch (sesh will create the session on the fly).
-            $knownHosts = $db.Values | ForEach-Object { $_.Host } | Sort-Object -Unique
-            if ($knownHosts -contains $Patterns[0]) {
-                $key = "$($Patterns[0])`t$($Patterns[1])"
-                if (-not $db.ContainsKey($key)) {
-                    $db[$key] = [PSCustomObject]@{ Host=$Patterns[0]; Session=$Patterns[1]; Rank=0.0; LastUsed=[int64]0 }
-                }
-                $pickedEntry = $db[$key]
-            }
-        }
-
         if (-not $pickedEntry) {
-            Write-Error "No match for: $($Patterns -join ' ')"; return
+            Write-Error ("No match for: {0}. Use 'tt -n HOST SESSION' to launch a new one." -f ($Patterns -join ' '))
+            return
         }
     } else {
         # Build TSV: HOST<TAB>SESSION, pipe to wsl fzf (--reverse so top item = top of screen).
