@@ -59,7 +59,7 @@ ssh -o ConnectTimeout=10 "$host" "bash -lc '\
 # 2. Build the remote shell payload (mirrors tt.ps1 / tt.zsh).
 #    - TT_HOST_ALIAS so tmux titles render the alias not the container hostname
 #    - BROWSER=tt-open so xdg-open / python webbrowser / etc. POST to our
-#      Windows-side listener via the et -rt tunnel below
+#      Windows-side listener via the et -r tunnel below
 #    - decode b64 -> ~/.local/bin/tt-launch -> exec bash <file> SESSION
 inner="export TT_HOST_ALIAS='$host' \
 && export BROWSER=tt-open \
@@ -69,13 +69,20 @@ inner="export TT_HOST_ALIAS='$host' \
 && chmod 0755 ~/.local/bin/tt-launch \
 && exec bash ~/.local/bin/tt-launch '$session'"
 
-# 3. et with reverse tunnel: remote port OPEN_PORT -> local OPEN_PORT.
+# 3. Wrap the bash-syntax inner in `bash -c '...'` because ET's `-c` arg runs
+#    inside the user's login shell on the remote — csh on BAN/SC/UFLWPE,
+#    which barfs on `export`/`&&`/etc. The base64-encode-then-eval pattern
+#    keeps the inner command opaque to csh (single-quoted token, no $ or
+#    metachars exposed) and bash decodes + evals it once it runs.
+inner_b64=$(printf '%s' "$inner" | base64 -w0)
+et_cmd="bash -c 'eval \"\$(echo $inner_b64 | base64 -d)\"'"
+
+# 4. et with reverse tunnel: remote port OPEN_PORT -> local OPEN_PORT.
 #    ET's tunnel syntax is `srcPort:dstPort` (two parts), not the ssh-style
 #    `srcPort:host:dstPort` — bind address defaults to localhost on both ends.
-#    -c runs the inner command instead of an interactive shell.
-# Use `-r` (short for --reversetunnel), NOT `-rt`. ET 6.2.11 parses `-rt`
-# as `-r t…` and fails with "Tunnel argument must have source and
-# destination between a ':'".
+#    Use `-r` (short for --reversetunnel), NOT `-rt`. ET 6.2.11 parses `-rt`
+#    as `-r t…` and fails with "Tunnel argument must have source and
+#    destination between a ':'".
 exec et "${host}:${ET_PORT}" \
   -r "${OPEN_PORT}:${OPEN_PORT}" \
-  -c "$inner"
+  -c "$et_cmd"
