@@ -350,8 +350,10 @@ redirect_home_dirs() {
       fi
     elif [[ -d "$src" ]]; then
       # Real directory with content — copy contents into $target, then replace.
+      # --force lets rsync replace a target dir with a symlink (conda envs
+      # routinely ship dirs in one location and symlinks in another).
       log "Migrating $src -> $target (rsync)"
-      if rsync -aHAX "$src/" "$target/" >/dev/null; then
+      if rsync -aHAX --force "$src/" "$target/" >/dev/null; then
         rm -rf "$src" && ln -s "$target" "$src"
       else
         warn "rsync failed for $src; leaving in place"
