@@ -494,7 +494,7 @@ unset _d
 
 # Anthropic / Claude Code (non-secret URL + model). API key in secrets.csh.
 setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
-setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-7[1m]'
+setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-6[1m]'
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
 setenv CLAUDE_CODE_NO_FLICKER 1
 

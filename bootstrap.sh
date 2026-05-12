@@ -307,7 +307,7 @@ done
 unset _d
 export PATH
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
 # Anything that wants to open a URL goes through ~/.local/bin/tt-open, which
@@ -316,6 +316,48 @@ export CLAUDE_CODE_NO_FLICKER=1
 command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 SNIPPET
+    fi
+  done
+}
+
+# ------------------------------------------------------------------ scratch redirect
+# xterm hosts (BAN, SC, UFLWPE) cap $HOME at 5 GB. Move cache/.local/package-
+# manager dirs onto the per-user scratch mount and leave symlinks behind so
+# everything downstream (micromamba, bun, mise, claude, codex, IDE servers)
+# writes to the big filesystem from the start.
+#
+# Hard-coded to /home/scratch.${USER}_gpu (NVIDIA xterm convention). If the
+# mount isn't present (WSL, laptops), skip cleanly.
+SCRATCH_BASE="/home/scratch.${USER}_gpu"
+SCRATCH_DIRS=(.cache .local .npm .bun .vscode-server .cursor-server)
+
+redirect_home_dirs() {
+  if [[ ! -d "$SCRATCH_BASE" ]]; then
+    log "No $SCRATCH_BASE — skipping home redirect (expected on WSL/laptop)"
+    return 0
+  fi
+  log "Redirecting home dirs to $SCRATCH_BASE"
+  local dir src target
+  for dir in "${SCRATCH_DIRS[@]}"; do
+    src="$HOME/$dir"
+    target="$SCRATCH_BASE/$dir"
+    mkdir -p "$target"
+    if [[ -L "$src" ]]; then
+      # Already a symlink — make sure it points at $target.
+      if [[ "$(readlink -f "$src" 2>/dev/null)" != "$(readlink -f "$target")" ]]; then
+        log "Re-pointing $src -> $target"
+        rm -f "$src" && ln -s "$target" "$src"
+      fi
+    elif [[ -d "$src" ]]; then
+      # Real directory with content — copy contents into $target, then replace.
+      log "Migrating $src -> $target (rsync)"
+      if rsync -aHAX "$src/" "$target/" >/dev/null; then
+        rm -rf "$src" && ln -s "$target" "$src"
+      else
+        warn "rsync failed for $src; leaving in place"
+      fi
+    else
+      ln -s "$target" "$src"
     fi
   done
 }
@@ -335,6 +377,11 @@ wire_claude_rule() {
 # ------------------------------------------------------------------ go
 
 ensure_repo
+
+# Stage 0: redirect ~/.cache and friends to /home/scratch.${USER}_gpu on
+# xterm hosts (no-op everywhere else). Must run before micromamba / mise /
+# bun installs land things under ~/.local.
+redirect_home_dirs
 
 # Stage 1: try system install where possible.
 PM=$(detect_pm)
@@ -452,6 +499,21 @@ wire_claude_rule
 if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
   log "mise install (pinned tools)"
   mise install 2>&1 | tail -3 || warn "mise install had problems; rerun later"
+fi
+
+# Stage 10: install Claude Code and OpenAI Codex CLIs.
+# Claude uses its official installer (drops binary into ~/.local/bin).
+# Codex ships as an npm package; install via bun (provisioned by Stage 9 mise).
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+if ! has claude; then
+  log "Installing Claude Code"
+  curl -fsSL https://claude.ai/install.sh | bash >/tmp/claude-install.log 2>&1 \
+    || warn "claude install failed; see /tmp/claude-install.log"
+fi
+if ! has codex; then
+  log "Installing OpenAI Codex CLI"
+  bun add -g @openai/codex >/tmp/codex-install.log 2>&1 \
+    || warn "codex install failed; see /tmp/codex-install.log"
 fi
 
 cat <<'EOF'
