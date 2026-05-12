@@ -127,12 +127,25 @@ function _Tt-Launch {
         Write-Error "wt.exe not found. Install Windows Terminal or add it to PATH."
         return
     }
-    $alias   = $E.Host
-    $seshArg = $E.Session -replace "'", "'\''"
+    $alias = $E.Host
+    # Session name goes inside single-quoted bash strings — escape any `'`.
+    $name  = $E.Session -replace "'", "'\''"
+    # Build the remote command. We don't use `sesh connect` because:
+    #   - mosh-server's exec'd shell environment makes sesh's tmux source
+    #     unreliable (we saw "No connection found for 'pia'" even with
+    #     pia-ai-agent running, while plain ssh worked fine).
+    #   - tmux lives at /bin/tmux or /usr/bin/tmux which is in every default
+    #     PATH, so a direct `tmux` call has no env dependencies.
+    # Logic: if a tmux session starting with $name exists, attach to that
+    # (prefix-match — "pia" → "pia-ai-agent"). Otherwise create $name.
+    # sesh stays available for the interactive `<prefix>+K` picker inside tmux.
+    # Uses [[ -n $m ]] (bash unquoted is safe inside [[ ]]) instead of [ -n
+    # "$m" ] so we avoid embedding `"` inside the bash -lc "..." wrapper.
+    $tmuxInner = "m=`$(tmux ls 2>/dev/null | awk -F: -v n='$name' 'index(`$1, n)==1{print `$1; exit}'); [[ -n `$m ]] && exec tmux attach -t `$m; exec tmux new -s '$name'"
     if ($alias -eq 'WSL') {
-        # Local WSL — no mosh. Set TT_HOST_ALIAS so tmux's set-titles renders
+        # Local WSL — no mosh. TT_HOST_ALIAS so tmux's set-titles renders
         # "WSL:cwd" instead of the WSL distro name.
-        $inner = "export TT_HOST_ALIAS=WSL && (tmux set-environment -g TT_HOST_ALIAS WSL 2>/dev/null || true) && exec sesh connect '$seshArg'"
+        $inner = "export TT_HOST_ALIAS=WSL; $tmuxInner"
         & $wt -w 0 new-tab --title "WSL:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $inner
     } else {
@@ -140,13 +153,10 @@ function _Tt-Launch {
         # title reflects the ssh-config alias (BAN, SC, UFLWPE) rather than the
         # remote hostname (dc4-container-xterm-28, etc.). mosh's "[mosh] " tag
         # is hard-coded and unavoidable.
-        # NOTE: `bash -lc` (login shell) — mosh-server's exec'd bash is
-        # neither interactive nor invoked-via-rsh, so without `-l` it skips
-        # both .bashrc and .profile, and PATH is missing ~/.local/bin (sesh),
-        # ~/.local/micromamba/envs/dotfiles/bin (tmux on no-sudo hosts), etc.
-        # `bash -lc` sources /etc/profile + ~/.profile which the bootstrap
-        # populates with the full dotfiles PATH.
-        $inner     = "export TT_HOST_ALIAS=$alias && (tmux set-environment -g TT_HOST_ALIAS $alias 2>/dev/null || true) && exec sesh connect '$seshArg'"
+        # `bash -lc` (login shell) sources /etc/profile + ~/.profile — mosh-
+        # server's exec'd bash is neither interactive nor invoked-via-rsh so
+        # without `-l` it skips both .bashrc and .profile.
+        $inner     = "export TT_HOST_ALIAS=$alias; $tmuxInner"
         # MOSH_TITLE_NOPREFIX=1 — tells mosh-client to NOT prepend "[mosh] " to
         # the window title (read by mosh, undocumented but supported since 1.3).
         $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -lc `"$inner`""
