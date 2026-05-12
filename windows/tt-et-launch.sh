@@ -44,15 +44,20 @@ fi
 
 # 2. Make sure etserver is running on the remote. SSH is fast enough — and
 #    starting via SSH is the cleanest no-sudo bootstrap on these hosts.
-#    NOTE: we don't pass --daemon — that wants /var/run/etserver.pid which
-#    is root-only. nohup + stdio redirection detaches just as well.
-ssh -o ConnectTimeout=10 "$host" "bash -lc '\
+#    NOTE: we don't pass --daemon (it wants /var/run/etserver.pid which is
+#    root-only). `ssh -f -n` forks ssh to background after authentication
+#    and disables stdin, so the inherited file descriptors that etserver
+#    holds open don't block our return. Plain bash `&` + nohup wasn't
+#    enough — ssh waits for those fds even after the foreground sleep
+#    returns.
+ssh -f -n -o ConnectTimeout=10 "$host" "bash -lc '\
   pgrep -u \$USER etserver >/dev/null \
-  || nohup ~/.local/bin/etserver --port $ET_PORT >/tmp/etserver.log 2>&1 < /dev/null & \
-  sleep 0.4'" || {
+  || nohup ~/.local/bin/etserver --port $ET_PORT >/tmp/etserver.log 2>&1 </dev/null'" || {
     echo "tt-et-launch: could not start etserver on $host" >&2
     exit 1
 }
+# Give etserver a beat to bind its TCP port before et tries to connect.
+sleep 0.4
 
 # 3. et with reverse tunnel + short remote command. ET's `-c` arg gets typed
 #    into the user's remote login shell (csh on BAN/SC/UFLWPE), so we keep
