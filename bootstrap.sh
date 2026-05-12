@@ -226,6 +226,7 @@ MAMBA_NEED=()
 has mosh-server || MAMBA_NEED+=(mosh)
 tmux_ok        || MAMBA_NEED+=(tmux)
 has zsh        || MAMBA_NEED+=(zsh)
+has bat        || MAMBA_NEED+=(bat)
 if (( ${#MAMBA_NEED[@]} > 0 )); then
   mamba_install "${MAMBA_NEED[@]}"
 fi

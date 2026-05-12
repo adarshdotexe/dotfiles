@@ -89,6 +89,8 @@ function _Tt-Seed {
             if ($m.Success) { $sessions += $m.Groups[1].Value }
         }
     }
+    # WSL is a local "host" — tt launches directly without mosh.
+    $hosts = @('WSL') + $hosts
     $sessions = $sessions | Sort-Object -Unique
     $valid = @{}
     foreach ($h in $hosts) {
@@ -134,15 +136,22 @@ function _Tt-FindWt {
 
 function _Tt-Launch {
     param([PSCustomObject] $E)
-    $seshArg   = $E.Session -replace "'", "'\''"
-    $remoteCmd = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $($E.Host) -- sesh connect '$seshArg'"
     $wt = _Tt-FindWt
     if (-not $wt) {
         Write-Error "wt.exe not found. Install Windows Terminal or add it to PATH."
         return
     }
-    & $wt -w 0 new-tab --title "$($E.Host):$($E.Session)" `
-        wsl.exe --cd '~' -- bash -lc $remoteCmd
+    $seshArg   = $E.Session -replace "'", "'\''"
+    if ($E.Host -eq 'WSL') {
+        # Local WSL — no mosh, just drop into a tmux/sesh session inside WSL.
+        $localCmd = "sesh connect '$seshArg'"
+        & $wt -w 0 new-tab --title "WSL:$($E.Session)" `
+            wsl.exe --cd '~' -- bash -lc $localCmd
+    } else {
+        $remoteCmd = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $($E.Host) -- sesh connect '$seshArg'"
+        & $wt -w 0 new-tab --title "$($E.Host):$($E.Session)" `
+            wsl.exe --cd '~' -- bash -lc $remoteCmd
+    }
 }
 
 function tt {
@@ -235,6 +244,21 @@ function tt {
             $ok
         } | Select-Object -First 1
 
+        if (-not $pickedEntry) {
+            # Fallback: 2 args where first matches a known host -> direct launch
+            # (covers `tt UFLWPE new-session` and `tt WSL new-session`).
+            if ($Patterns.Count -eq 2) {
+                $knownHosts = $db.Values | ForEach-Object { $_.Host } | Sort-Object -Unique
+                $hostMatch  = $knownHosts | Where-Object { $_ -eq $Patterns[0] } | Select-Object -First 1
+                if ($hostMatch) {
+                    $key = "$hostMatch`t$($Patterns[1])"
+                    if (-not $db.ContainsKey($key)) {
+                        $db[$key] = [PSCustomObject]@{ Host=$hostMatch; Session=$Patterns[1]; Rank=0.0; LastUsed=[int64]0 }
+                    }
+                    $pickedEntry = $db[$key]
+                }
+            }
+        }
         if (-not $pickedEntry) {
             Write-Error ("No match for: {0}. Use 'tt -n HOST SESSION' to launch a new one." -f ($Patterns -join ' '))
             return

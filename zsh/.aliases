@@ -7,7 +7,10 @@ alias aider='/home/scratch.advarshney_gpu/venv_3.10/bin/python3 -m aider'
 alias proto_pilot='/home/nv/utils/chipnemo-qa-bot/release/proto_pilot'
 alias jira='uvx --with jira --with streamlit streamlit run ~/.local/jira_streamlit/dev/power/APADEV/Core_Frameworks/Jira/st_gui.py'
 alias lwpe_server="nvrun python3 run_server.py"
-alias cat="/home/utils/bat-0.23.0/bin/bat"
+# Use bat as cat replacement when available. bootstrap.sh installs bat into
+# the userland micromamba env so it's on every host. Falls back to system
+# cat (no alias) if bat is missing.
+command -v bat >/dev/null 2>&1 && alias cat='bat'
 
 # General purpose
 alias c='clear'

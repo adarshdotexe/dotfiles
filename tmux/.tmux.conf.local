@@ -365,6 +365,14 @@ tmux_conf_theme_clock_style="12"
 # on Linux, this requires xsel, xclip or wl-copy
 tmux_conf_copy_to_os_clipboard=true
 
+# Force OSC 52 (terminal-level clipboard) instead of xsel/xclip. Reason:
+# our sanitized ssh-config has ForwardX11=no, but ~/.zshrc still exports
+# DISPLAY=<ssh-client-ip>:0.0 — xsel would try to talk to that nonexistent
+# X server and fail silently. OSC 52 routes the buffer through mosh → WT
+# → Windows clipboard without needing an X server.
+set -g set-clipboard on
+set -g allow-passthrough on
+
 
 # -- urlscan -------------------------------------------------------------------
 

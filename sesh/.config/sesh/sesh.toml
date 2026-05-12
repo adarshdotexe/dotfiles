@@ -15,19 +15,19 @@ path = "~/repos/dotfiles"
 [[session]]
 name = "AdarshOS"
 path = "~/AdarshOS"
-startup_command = "claude"
+startup_command = ""
 
 [[session]]
 name = "UFLWPE"
 path = "~/repos/frappe"
-startup_command = "claude"
+startup_command = ""
 
 [[session]]
 name = "pace"
 path = "~/repos/power-architecture-chat-engine"
-startup_command = "claude"
+startup_command = ""
 
 [[session]]
 name = "power-arch-claude-plugins"
 path = "~/repos/power-arch-claude-plugins"
-startup_command = "claude"
+startup_command = ""
