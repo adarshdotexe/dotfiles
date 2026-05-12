@@ -104,6 +104,9 @@ export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 # -----------------------------------------------------------------------------
 [[ -r "$HOME/.aliases" ]] && source "$HOME/.aliases"
 
+# Functions split out into ~/.zsh/*.zsh (e.g. cchost.zsh).
+for f in "$HOME/.zsh/"*.zsh(N); do source "$f"; done
+
 # -----------------------------------------------------------------------------
 # 6. Oh My Zsh + Powerlevel10k
 # -----------------------------------------------------------------------------
