@@ -146,7 +146,7 @@ function _Tt-Launch {
     if ($alias -eq 'WSL') {
         # Local WSL — no mosh. Set TT_HOST_ALIAS so tmux's set-titles renders
         # "WSL:cwd" instead of the WSL distro name.
-        $inner = "export TT_HOST_ALIAS=WSL; tmux set-environment -g TT_HOST_ALIAS WSL 2>/dev/null; exec sesh connect '$seshArg'"
+        $inner = "export TT_HOST_ALIAS=WSL && (tmux set-environment -g TT_HOST_ALIAS WSL 2>/dev/null || true) && exec sesh connect '$seshArg'"
         & $wt -w 0 new-tab --title "WSL:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $inner
     } else {
@@ -154,7 +154,7 @@ function _Tt-Launch {
         # title reflects the ssh-config alias (BAN, SC, UFLWPE) rather than the
         # remote hostname (dc4-container-xterm-28, etc.). mosh's "[mosh] " tag
         # is hard-coded and unavoidable.
-        $inner     = "export TT_HOST_ALIAS=$alias; tmux set-environment -g TT_HOST_ALIAS $alias 2>/dev/null; exec sesh connect '$seshArg'"
+        $inner     = "export TT_HOST_ALIAS=$alias && (tmux set-environment -g TT_HOST_ALIAS $alias 2>/dev/null || true) && exec sesh connect '$seshArg'"
         # MOSH_TITLE_NOPREFIX=1 — tells mosh-client to NOT prepend "[mosh] " to
         # the window title (read by mosh, undocumented but supported since 1.3).
         $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -c `"$inner`""
