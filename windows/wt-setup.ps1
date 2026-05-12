@@ -72,13 +72,17 @@ function New-ProfileEntry {
     # wsl-ssh-agent bridge so mosh's underlying ssh can authenticate via key.
     # LC_ALL=C.UTF-8 LANG=C.UTF-8 — WSL's /etc/default/locale forces en_US.UTF-8
     # which Rocky 8 / BAN doesn't have generated. Force a locale the remote has.
-    $remote = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $HostName -- tmux new -A -s $Session"
+    $inner  = "export TT_HOST_ALIAS=$HostName; exec tmux new -A -s $Session"
+    $remote = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $HostName -- bash -c `"$inner`""
     [ordered] @{
         guid        = "{$(Get-DeterministicGuid $HostName)}"
         name        = $HostName
         tabTitle    = $HostName
         commandline = "wsl.exe --cd ~ -- bash -lc `"$remote`""
         hidden      = $false
+        # Let mosh/tmux dynamically set "alias:path" — the inner tmux config
+        # uses TT_HOST_ALIAS so the title reads as the ssh-config alias rather
+        # than the remote FQDN.
     }
 }
 
@@ -114,7 +118,12 @@ foreach ($h in $hosts) {
     if ($existing.ContainsKey($h)) {
         $existing[$h].commandline = $entry.commandline
         $existing[$h].guid        = $entry.guid
-        if (-not $existing[$h].tabTitle) { $existing[$h] | Add-Member tabTitle $entry.tabTitle -Force }
+        if (-not $existing[$h].tabTitle) {
+            $existing[$h] | Add-Member tabTitle $entry.tabTitle -Force
+        }
+        # Drop any old suppressApplicationTitle — we let mosh/tmux update the
+        # title dynamically now (so it can show "alias:path").
+        $existing[$h].PSObject.Properties.Remove('suppressApplicationTitle')
         $updated++
     } else {
         $newList += [PSCustomObject] $entry

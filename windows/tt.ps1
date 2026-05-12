@@ -141,15 +141,22 @@ function _Tt-Launch {
         Write-Error "wt.exe not found. Install Windows Terminal or add it to PATH."
         return
     }
-    $seshArg   = $E.Session -replace "'", "'\''"
-    if ($E.Host -eq 'WSL') {
-        # Local WSL — no mosh, just drop into a tmux/sesh session inside WSL.
-        $localCmd = "sesh connect '$seshArg'"
+    $alias   = $E.Host
+    $seshArg = $E.Session -replace "'", "'\''"
+    if ($alias -eq 'WSL') {
+        # Local WSL — no mosh. Set TT_HOST_ALIAS so tmux's set-titles renders
+        # "WSL:cwd" instead of the WSL distro name.
+        $inner = "export TT_HOST_ALIAS=WSL; exec sesh connect '$seshArg'"
         & $wt -w 0 new-tab --title "WSL:$($E.Session)" `
-            wsl.exe --cd '~' -- bash -lc $localCmd
+            wsl.exe --cd '~' -- bash -lc $inner
     } else {
-        $remoteCmd = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $($E.Host) -- sesh connect '$seshArg'"
-        & $wt -w 0 new-tab --title "$($E.Host):$($E.Session)" `
+        # Inject TT_HOST_ALIAS through to the remote shell so the inner tmux
+        # title reflects the ssh-config alias (BAN, SC, UFLWPE) rather than the
+        # remote hostname (dc4-container-xterm-28, etc.). mosh's "[mosh] " tag
+        # is hard-coded and unavoidable.
+        $inner     = "export TT_HOST_ALIAS=$alias; exec sesh connect '$seshArg'"
+        $remoteCmd = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -c `"$inner`""
+        & $wt -w 0 new-tab --title "$alias`:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $remoteCmd
     }
 }

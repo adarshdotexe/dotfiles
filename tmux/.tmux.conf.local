@@ -181,7 +181,12 @@ tmux_conf_theme_status_attr="none"
 #     - #{hostname_full_ssh}
 #     - #{username}
 #     - #{username_ssh}
-tmux_conf_theme_terminal_title="#h ❐ #S ● #I #W"
+# When Claude Code (or any app) sets a window title via OSC 0/2 inside a tmux
+# pane, that becomes #{pane_title}. We forward it as the outer WT tab title,
+# prefixed with the ssh-config alias from TT_HOST_ALIAS so you can see which
+# host the tab belongs to. Falls back to pane_current_path when no app is
+# managing the title.
+tmux_conf_theme_terminal_title='#{?#{E:TT_HOST_ALIAS},#{E:TT_HOST_ALIAS}: ,}#{?#{!=:#{pane_title},#h},#{pane_title},#{pane_current_path}}'
 
 # window status style
 #   - built-in variables are:
@@ -371,7 +376,12 @@ tmux_conf_copy_to_os_clipboard=true
 # X server and fail silently. OSC 52 routes the buffer through mosh → WT
 # → Windows clipboard without needing an X server.
 set -g set-clipboard on
+
+# Claude Code recommended tmux settings — allow apps (Claude Code) to use
+# DCS passthrough sequences, plus CSI-u extended keys (Ctrl-Enter, etc.).
 set -g allow-passthrough on
+set -s extended-keys on
+set -as terminal-features 'xterm*:extkeys'
 
 
 # -- urlscan -------------------------------------------------------------------
