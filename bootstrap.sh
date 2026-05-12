@@ -294,6 +294,19 @@ bash "$DOTFILES_DIR/link.sh"
 # Stage 7: secrets repo (after link, so .zshrc is ready to source it).
 ensure_secrets_repo
 
+# Stage 7a: symlink SSH config from the private secrets repo if present.
+if [[ -r "$SECRETS_DIR/ssh-config" ]]; then
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+  if [[ -L "$HOME/.ssh/config" ]]; then
+    rm -f "$HOME/.ssh/config"
+  elif [[ -e "$HOME/.ssh/config" ]]; then
+    mv "$HOME/.ssh/config" "$HOME/.ssh/config.bootstrap-backup.$(date +%s)"
+  fi
+  ln -sfn "$SECRETS_DIR/ssh-config" "$HOME/.ssh/config"
+  log "Linked $HOME/.ssh/config -> $SECRETS_DIR/ssh-config"
+fi
+
 # Stage 8a: also make bash see ANTHROPIC_API_KEY etc.
 wire_bash_secrets
 
