@@ -21,40 +21,34 @@ _tt_db() {
 _tt_seed() {
   local db; db=$(_tt_db)
   local cfg="$HOME/.ssh/config"
-  local toml="$HOME/repos/dotfiles/sesh/.config/sesh/sesh.toml"
-  [[ -r "$cfg" && -r "$toml" ]] || return
-  local hosts sessions
+  [[ -r "$cfg" ]] || return
+  # Hosts come from ssh-config. Session names are arbitrary (whatever sesh
+  # finds on the remote: tmux ls, zoxide, ssh hosts), so we don't constrain
+  # them. tt just tracks which (host, session) pairs you've launched.
+  local hosts
   hosts=$(awk 'tolower($1)=="host"{for(i=2;i<=NF;i++)if($i!~/[*?]/&&$i!="")print $i}' "$cfg" | sort -u)
-  sessions=$(printf 'main\n%s\n' "$(awk -F'"' '/^\s*name\s*=\s*"/{print $2}' "$toml")" | sort -u)
 
-  # Build valid-key set and tmpfile of all current (host, session) combos.
-  local valid=$(mktemp) tmp=$(mktemp)
-  for h in ${(f)hosts}; do
-    for s in ${(f)sessions}; do
-      printf '%s\t%s\n' "$h" "$s" >> "$valid"
-    done
-  done
+  local validhosts=$(mktemp) tmp=$(mktemp)
+  for h in ${(f)hosts}; do printf '%s\n' "$h" >> "$validhosts"; done
 
-  # Keep ONLY (host, session) combos that appear in $valid. Anything else
-  # (renamed host or session) is dropped. Then append any (host, session)
-  # from $valid that's not already in DB.
-  awk -F'\t' -v valid="$valid" '
+  # Drop entries whose host isn't in ssh-config. Seed a "main" session per
+  # host so first-time `tt` isn't empty. Existing (host, session) rows stay
+  # untouched as long as the host is still valid.
+  awk -F'\t' -v hf="$validhosts" '
     BEGIN {
-      while ((getline line < valid) > 0) {
-        split(line, p, "\t"); v[p[1] FS p[2]] = 1
-      }
+      while ((getline line < hf) > 0) hosts[line] = 1
     }
     NF == 4 {
-      k = $1 FS $2
-      if (k in v) { print; have[k] = 1 }
+      if ($1 in hosts) { print; have[$1 FS $2] = 1 }
     }
     END {
-      for (k in v) if (!(k in have)) {
-        n = split(k, p, FS); print p[1] "\t" p[2] "\t0\t0"
+      for (h in hosts) {
+        k = h FS "main"
+        if (!(k in have)) print h "\tmain\t0\t0"
       }
     }
   ' "$db" > "$tmp" && mv "$tmp" "$db"
-  rm -f "$valid"
+  rm -f "$validhosts"
 }
 
 _tt_score_awk() {
@@ -79,7 +73,12 @@ _tt_score_awk() {
 
 _tt_launch() {
   local host="$1" session="$2"
-  local remote="LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $host -- sesh connect '${session//\'/\'\\\'\'}'"
+  local sesh_arg="${session//\'/\'\\\'\'}"
+  # `bash -lc` on the remote so /etc/profile + ~/.profile load — mosh-server's
+  # exec'd shell is neither interactive nor invoked-via-rsh, so without -l it
+  # skips both .bashrc and .profile and PATH is missing ~/.local/bin (sesh).
+  local inner="export TT_HOST_ALIAS=$host && (tmux set-environment -g TT_HOST_ALIAS $host 2>/dev/null || true) && exec sesh connect '$sesh_arg'"
+  local remote="MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $host -- bash -lc \"$inner\""
   if command -v wt.exe >/dev/null 2>&1; then
     wt.exe -w 0 new-tab --title "$host:$session" \
       wsl.exe --cd '~' -- bash -lc "$remote"

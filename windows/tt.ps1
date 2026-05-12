@@ -67,10 +67,12 @@ function _Tt-Score {
 
 function _Tt-Seed {
     param([hashtable] $Db)
-    # Pull hosts from ssh config and sessions from sesh.toml so the first
-    # invocation isn't an empty picker.
+    # Pull hosts from ssh config so the first invocation isn't an empty picker.
+    # Sessions are NOT seeded from sesh.toml — sesh's job is to discover what
+    # exists on each remote (tmux ls, zoxide, ssh hosts). tt just tracks which
+    # (host, session) pairs YOU have launched, regardless of how sesh resolves
+    # the session name on arrival.
     $cfg = "$env:USERPROFILE\.ssh\config"
-    $toml = "$env:USERPROFILE\repos\dotfiles\sesh\.config\sesh\sesh.toml"
 
     $hosts = @()
     if (Test-Path $cfg) {
@@ -82,44 +84,28 @@ function _Tt-Seed {
             }
         }
     }
-    $sessions = @('main')
-    if (Test-Path $toml) {
-        foreach ($line in Get-Content $toml) {
-            $m = [regex]::Match($line, '^\s*name\s*=\s*"([^"]+)"')
-            if ($m.Success) { $sessions += $m.Groups[1].Value }
-        }
-    }
     # WSL is a local "host" — tt launches directly without mosh.
     $hosts = @('WSL') + $hosts
-    $sessions = $sessions | Sort-Object -Unique
-    $valid = @{}
+    # Seed a default "main" entry per host so first-time `tt` shows something.
     foreach ($h in $hosts) {
-        foreach ($s in $sessions) {
-            $key = "${h}`t${s}"
-            $valid[$key] = $true
-            if (-not $Db.ContainsKey($key)) {
-                $Db[$key] = [PSCustomObject]@{
-                    Host     = $h
-                    Session  = $s
-                    Rank     = 0.0
-                    LastUsed = 0
-                }
+        $key = "${h}`tmain"
+        if (-not $Db.ContainsKey($key)) {
+            $Db[$key] = [PSCustomObject]@{
+                Host     = $h
+                Session  = 'main'
+                Rank     = 0.0
+                LastUsed = 0
             }
         }
     }
-    # Prune: drop any entry whose Host isn't in the current ssh config OR
-    # whose Session isn't in the current sesh.toml. Ranks for renamed/removed
-    # hosts/sessions don't carry over (cleaner than tracking aliases).
-    # Ad-hoc sessions created via `tt -n` will need re-promoting after a rename.
+    # Prune: drop entries whose Host isn't in the current ssh config. Session
+    # names are arbitrary (whatever sesh finds on the remote) so we don't
+    # validate them. Renamed hosts lose their rank — re-promote via `tt -n`.
     $validHosts = @{}
     foreach ($h in $hosts) { $validHosts[$h] = $true }
-    $validSessions = @{}
-    foreach ($s in $sessions) { $validSessions[$s] = $true }
     $toRemove = @()
     foreach ($k in $Db.Keys) {
-        $e = $Db[$k]
-        if (-not $validHosts.ContainsKey($e.Host))       { $toRemove += $k; continue }
-        if (-not $validSessions.ContainsKey($e.Session)) { $toRemove += $k }
+        if (-not $validHosts.ContainsKey($Db[$k].Host)) { $toRemove += $k }
     }
     foreach ($k in $toRemove) { $Db.Remove($k) | Out-Null }
 }
@@ -154,10 +140,16 @@ function _Tt-Launch {
         # title reflects the ssh-config alias (BAN, SC, UFLWPE) rather than the
         # remote hostname (dc4-container-xterm-28, etc.). mosh's "[mosh] " tag
         # is hard-coded and unavoidable.
+        # NOTE: `bash -lc` (login shell) — mosh-server's exec'd bash is
+        # neither interactive nor invoked-via-rsh, so without `-l` it skips
+        # both .bashrc and .profile, and PATH is missing ~/.local/bin (sesh),
+        # ~/.local/micromamba/envs/dotfiles/bin (tmux on no-sudo hosts), etc.
+        # `bash -lc` sources /etc/profile + ~/.profile which the bootstrap
+        # populates with the full dotfiles PATH.
         $inner     = "export TT_HOST_ALIAS=$alias && (tmux set-environment -g TT_HOST_ALIAS $alias 2>/dev/null || true) && exec sesh connect '$seshArg'"
         # MOSH_TITLE_NOPREFIX=1 — tells mosh-client to NOT prepend "[mosh] " to
         # the window title (read by mosh, undocumented but supported since 1.3).
-        $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -c `"$inner`""
+        $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -lc `"$inner`""
         & $wt -w 0 new-tab --title "$alias`:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $remoteCmd
     }
