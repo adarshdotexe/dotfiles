@@ -1,0 +1,11 @@
+# ~/.cshrc_custom - Sources common (synced) and local (machine-specific) configs
+
+# Common settings (synced across all machines)
+if (-e ~/.cshrc_common) then
+    source ~/.cshrc_common
+endif
+
+# Machine-specific settings (not synced)
+if (-e ~/.cshrc_local) then
+    source ~/.cshrc_local
+endif
