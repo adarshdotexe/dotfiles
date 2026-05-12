@@ -73,7 +73,8 @@ function New-ProfileEntry {
     # LC_ALL=C.UTF-8 LANG=C.UTF-8 — WSL's /etc/default/locale forces en_US.UTF-8
     # which Rocky 8 / BAN doesn't have generated. Force a locale the remote has.
     $inner  = "export TT_HOST_ALIAS=$HostName; exec tmux new -A -s $Session"
-    $remote = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $HostName -- bash -c `"$inner`""
+    # MOSH_TITLE_NOPREFIX=1 disables mosh-client's hard-coded "[mosh] " title prefix.
+    $remote = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $HostName -- bash -c `"$inner`""
     [ordered] @{
         guid        = "{$(Get-DeterministicGuid $HostName)}"
         name        = $HostName

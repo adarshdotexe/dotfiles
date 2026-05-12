@@ -155,7 +155,9 @@ function _Tt-Launch {
         # remote hostname (dc4-container-xterm-28, etc.). mosh's "[mosh] " tag
         # is hard-coded and unavoidable.
         $inner     = "export TT_HOST_ALIAS=$alias; exec sesh connect '$seshArg'"
-        $remoteCmd = "LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -c `"$inner`""
+        # MOSH_TITLE_NOPREFIX=1 — tells mosh-client to NOT prepend "[mosh] " to
+        # the window title (read by mosh, undocumented but supported since 1.3).
+        $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -c `"$inner`""
         & $wt -w 0 new-tab --title "$alias`:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $remoteCmd
     }
