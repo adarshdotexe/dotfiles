@@ -1,9 +1,13 @@
-# Tools managed by mise. The host's own /home/utils Python/Node/UV are kept
-# in PATH and used by default; mise fills the gaps (notably bun, missing on BAN).
+# Tools managed by mise. The host's own /home/utils Python/UV are kept in
+# PATH and used by default; mise fills the gaps:
+#   - bun: missing on BAN
+#   - node (LTS): required by codex (#!/usr/bin/env node) and not always
+#     on /home/utils for every xterm (SC was missing it).
 # Run `mise install` after bootstrap to materialize these.
 
 [tools]
 bun = "latest"
+node = "lts"
 
 [settings]
 auto_install = true
