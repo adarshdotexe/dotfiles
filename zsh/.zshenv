@@ -24,3 +24,8 @@ export LANG="${LANG:-en_US.UTF-8}"
 export LC_ALL="${LC_ALL:-en_US.UTF-8}"
 
 export MISE_DATA_DIR="$HOME/.local/share/mise"
+
+# Secrets — sourced eagerly so non-interactive zsh (e.g. `zsh -c '...'`) also
+# has the keys. The same source line in .zshrc is now redundant but harmless.
+[[ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ]] && \
+  source "$HOME/.config/dotfiles-secrets/secrets.zsh"
