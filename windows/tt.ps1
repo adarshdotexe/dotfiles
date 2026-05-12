@@ -156,15 +156,20 @@ function _Tt-Launch {
         # by bootstrap.sh) handles: starting etserver on the remote via SSH if
         # it's not running, opening the reverse tunnel for the URL bridge, and
         # invoking et with the inner tt-launch payload as a positional arg.
-        # The `bash -lc 'tt-et-launch "$@"' bash $host $session $b64` form
-        # passes argv cleanly — each argument is a discrete token, no quoting
-        # gymnastics across the PS -> wt -> wsl -> bash -> et chain.
+        #
+        # IMPORTANT: wt's new-tab joins argv after `--` with spaces, dropping
+        # any quoting we'd build for `"$@"`. We side-step this by baking the
+        # actual args into a single bash -lc string. Safe because:
+        #   - $alias  was matched against the ssh-config Host list above
+        #   - $session passed `^[A-Za-z0-9._-]{1,64}$` validation
+        #   - $b64    is plain A-Z 0-9 + / =
+        # None of those need shell escaping.
+        $bashCmd = "tt-et-launch '$alias' '$session' $b64"
         $wtArgs = @(
             '-w','0','new-tab','--title',"${alias}:${session}",
             '--',
             'wsl.exe','-d',$distro,'--',
-            'bash','-lc','tt-et-launch "$@"',
-            'bash', $alias, $session, $b64
+            'bash','-lc',$bashCmd
         )
         & $wt @wtArgs
     }

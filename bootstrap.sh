@@ -142,20 +142,6 @@ install_eternal_terminal() {
   fi
   log "Installing EternalTerminal from source (3-8 min)"
 
-  # Build + runtime deps. cmake comes from micromamba so we have a known-recent
-  # version even on hosts where the system cmake is ancient. gcc_linux-64 /
-  # gxx_linux-64 give us a libstdc++ that matches conda's libprotobuf /
-  # libabsl — without them the link fails with "undefined reference to
-  # std::__throw_bad_array_new_length()@GLIBCXX_3.4.29" because Rocky 8's
-  # system gcc 8.5 has an older libstdc++ than conda was built against.
-  # DISABLE_SENTRY/CRASH_LOG/TELEMETRY: skip the sentry-native crashpad
-  # subtree which fights cleanly with this build setup.
-  mamba_install \
-    cmake libprotobuf protobuf libsodium gflags openssl zlib pcre2 \
-    brotli libbrotlidec libbrotlienc libbrotlicommon \
-    gcc_linux-64 gxx_linux-64 \
-    || { err "Failed to install EternalTerminal build deps via micromamba"; return 1; }
-
   local build_dir; build_dir=$(mktemp -d)
   local rc=0
 
@@ -167,39 +153,73 @@ install_eternal_terminal() {
     return 1
   fi
 
-  local mamba_prefix="$MAMBA_ENV"
-  (
-    set -e
-    cd "$build_dir/et"
-    mkdir -p build && cd build
-    export PATH="$mamba_prefix/bin:$PATH"
-    # conda compiler binaries are prefixed; pin them so cmake doesn't fall
-    # back to the system /usr/bin/gcc (older libstdc++ -> link failure).
-    export CC="$mamba_prefix/bin/x86_64-conda-linux-gnu-gcc"
-    export CXX="$mamba_prefix/bin/x86_64-conda-linux-gnu-g++"
-    log "cmake configure (prefix=$HOME/.local, deps=$mamba_prefix)"
-    # -rpath-link teaches conda's bfd ld to look in /usr/lib64 when resolving
-    # SONAME deps of system libs like libselinux.so (which pulls in libpcre2).
-    # Without it, ld errors out with "undefined reference to pcre2_*" even
-    # though pcre2 is on the runtime ld.so.cache search path.
-    cmake .. \
-      -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
-      -DCMAKE_PREFIX_PATH="$mamba_prefix" \
-      -DCMAKE_INSTALL_RPATH="$mamba_prefix/lib" \
-      -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
-      -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
-      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
-      -DBUILD_TESTING=OFF \
-      -DDISABLE_VCPKG=ON \
-      -DDISABLE_SENTRY=ON \
-      -DDISABLE_CRASH_LOG=ON \
-      -DDISABLE_TELEMETRY=ON \
-      > /tmp/et-cmake-config.log 2>&1
-    log "cmake build (5-10 min on first install)"
-    cmake --build . -j"$(nproc)" > /tmp/et-build.log 2>&1
-    log "cmake install"
-    cmake --install . > /tmp/et-install.log 2>&1
-  ) || rc=$?
+  # Two build paths:
+  #   - sudo + apt-get available (WSL Ubuntu): install dev libs via apt and
+  #     build with system gcc. Avoids conda's prefixed gcc / sysroot mismatch
+  #     errors on Ubuntu 24's glibc 2.39+ (`__time64_t` undefined etc.).
+  #   - else (no-sudo Rocky 8 containers): pull libs + matched compiler into
+  #     the micromamba `dotfiles` env and link with -Wl,-rpath-link,/usr/lib64
+  #     so the conda bfd linker can still resolve system libselinux deps.
+  if has_sudo && has apt-get; then
+    log "sudo+apt path: installing ET build deps via apt"
+    sudo apt-get install -y -q \
+      cmake build-essential \
+      libsodium-dev libprotobuf-dev protobuf-compiler libgflags-dev \
+      libssl-dev zlib1g-dev libbrotli-dev libutempter-dev libcap-dev \
+      || { err "apt install of ET build deps failed"; rm -rf "$build_dir"; return 1; }
+    (
+      set -e
+      cd "$build_dir/et"
+      mkdir -p build && cd build
+      log "cmake configure (system gcc)"
+      cmake .. \
+        -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
+        -DBUILD_TESTING=OFF \
+        -DDISABLE_VCPKG=ON \
+        -DDISABLE_SENTRY=ON \
+        -DDISABLE_CRASH_LOG=ON \
+        -DDISABLE_TELEMETRY=ON \
+        > /tmp/et-cmake-config.log 2>&1
+      log "cmake build (3-5 min)"
+      cmake --build . -j"$(nproc)" > /tmp/et-build.log 2>&1
+      log "cmake install"
+      cmake --install . > /tmp/et-install.log 2>&1
+    ) || rc=$?
+  else
+    log "no-sudo path: installing ET build deps via micromamba (conda gcc + libs)"
+    mamba_install \
+      cmake libprotobuf protobuf libsodium gflags openssl zlib pcre2 \
+      brotli libbrotlidec libbrotlienc libbrotlicommon \
+      gcc_linux-64 gxx_linux-64 \
+      || { err "Failed to install ET build deps via micromamba"; rm -rf "$build_dir"; return 1; }
+    local mamba_prefix="$MAMBA_ENV"
+    (
+      set -e
+      cd "$build_dir/et"
+      mkdir -p build && cd build
+      export PATH="$mamba_prefix/bin:$PATH"
+      export CC="$mamba_prefix/bin/x86_64-conda-linux-gnu-gcc"
+      export CXX="$mamba_prefix/bin/x86_64-conda-linux-gnu-g++"
+      log "cmake configure (conda gcc, RPATH=$mamba_prefix/lib)"
+      cmake .. \
+        -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
+        -DCMAKE_PREFIX_PATH="$mamba_prefix" \
+        -DCMAKE_INSTALL_RPATH="$mamba_prefix/lib" \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
+        -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
+        -DBUILD_TESTING=OFF \
+        -DDISABLE_VCPKG=ON \
+        -DDISABLE_SENTRY=ON \
+        -DDISABLE_CRASH_LOG=ON \
+        -DDISABLE_TELEMETRY=ON \
+        > /tmp/et-cmake-config.log 2>&1
+      log "cmake build (5-10 min on first install)"
+      cmake --build . -j"$(nproc)" > /tmp/et-build.log 2>&1
+      log "cmake install"
+      cmake --install . > /tmp/et-install.log 2>&1
+    ) || rc=$?
+  fi
 
   rm -rf "$build_dir"
 

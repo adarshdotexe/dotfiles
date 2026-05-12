@@ -97,11 +97,15 @@ _tt_launch() {
     # Remote via EternalTerminal. tt-et-launch (installed in ~/.local/bin by
     # bootstrap.sh) bootstraps etserver on $host via SSH, opens the URL
     # reverse-tunnel, and invokes et with the inner tt-launch payload as a
-    # positional arg. Calling it as a single argv keeps every parser between
-    # us and et happy.
+    # positional arg.
+    #
+    # wt.exe's new-tab joins argv-after-`--` with spaces, dropping the
+    # quoting around `"$@"`. Bake the args into the bash -lc string instead;
+    # $host/$session are regex-validated and $b64 is plain alphanumeric so
+    # no shell escaping is needed.
     if command -v wt.exe >/dev/null 2>&1; then
       wt.exe -w 0 new-tab --title "$host:$session" \
-        wsl.exe -- bash -lc 'tt-et-launch "$@"' bash "$host" "$session" "$b64"
+        wsl.exe -- bash -lc "tt-et-launch '$host' '$session' $b64"
     else
       tt-et-launch "$host" "$session" "$b64"
     fi
