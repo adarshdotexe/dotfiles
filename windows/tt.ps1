@@ -128,38 +128,31 @@ function _Tt-Launch {
         return
     }
     $alias = $E.Host
-    # Session name goes inside single-quoted bash strings — escape any `'`.
-    $name  = $E.Session -replace "'", "'\''"
-    # Build the remote command. We don't use `sesh connect` because:
-    #   - mosh-server's exec'd shell environment makes sesh's tmux source
-    #     unreliable (we saw "No connection found for 'pia'" even with
-    #     pia-ai-agent running, while plain ssh worked fine).
-    #   - tmux lives at /bin/tmux or /usr/bin/tmux which is in every default
-    #     PATH, so a direct `tmux` call has no env dependencies.
-    # Logic: if a tmux session starting with $name exists, attach to that
-    # (prefix-match — "pia" → "pia-ai-agent"). Otherwise create $name.
-    # sesh stays available for the interactive `<prefix>+K` picker inside tmux.
-    # Uses [[ -n $m ]] (bash unquoted is safe inside [[ ]]) instead of [ -n
-    # "$m" ] so we avoid embedding `"` inside the bash -lc "..." wrapper.
-    $tmuxInner = "m=`$(tmux ls 2>/dev/null | awk -F: -v n='$name' 'index(`$1, n)==1{print `$1; exit}'); [[ -n `$m ]] && exec tmux attach -t `$m; exec tmux new -s '$name'"
+    # The user's remote session payload — plain bash, with no quoting tricks.
+    # We base64-encode this whole script and pipe through `base64 -d | bash`
+    # on the remote so it survives every parser between PS and the remote
+    # shell (PowerShell native arg passing, wt.exe's `;` action-splitter,
+    # wsl.exe's argv, the outer `bash -lc`, mosh's command pass-through, and
+    # the remote `bash -lc`). None of them see anything but A-Z 0-9 + / =.
+    $payload = @"
+export TT_HOST_ALIAS='$alias'
+exec sesh connect '$($E.Session -replace "'", "'\''")'
+"@
+    $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($payload))
     if ($alias -eq 'WSL') {
         # Local WSL — no mosh. TT_HOST_ALIAS so tmux's set-titles renders
         # "WSL:cwd" instead of the WSL distro name.
-        $inner = "export TT_HOST_ALIAS=WSL; $tmuxInner"
+        $inner = "echo $b64 | base64 -d | bash -l"
         & $wt -w 0 new-tab --title "WSL:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $inner
     } else {
-        # Inject TT_HOST_ALIAS through to the remote shell so the inner tmux
-        # title reflects the ssh-config alias (BAN, SC, UFLWPE) rather than the
-        # remote hostname (dc4-container-xterm-28, etc.). mosh's "[mosh] " tag
-        # is hard-coded and unavoidable.
-        # `bash -lc` (login shell) sources /etc/profile + ~/.profile — mosh-
-        # server's exec'd bash is neither interactive nor invoked-via-rsh so
-        # without `-l` it skips both .bashrc and .profile.
-        $inner     = "export TT_HOST_ALIAS=$alias; $tmuxInner"
         # MOSH_TITLE_NOPREFIX=1 — tells mosh-client to NOT prepend "[mosh] " to
         # the window title (read by mosh, undocumented but supported since 1.3).
-        $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -lc `"$inner`""
+        # `bash -lc` on the remote sources /etc/profile + ~/.profile so PATH
+        # gets ~/.local/bin (sesh) — mosh-server's exec'd bash is neither
+        # interactive nor invoked-via-rsh so without `-l` both startup files
+        # are skipped.
+        $remoteCmd = "MOSH_TITLE_NOPREFIX=1 LC_ALL=C.UTF-8 LANG=C.UTF-8 mosh $alias -- bash -lc 'echo $b64 | base64 -d | bash -l'"
         & $wt -w 0 new-tab --title "$alias`:$($E.Session)" `
             wsl.exe --cd '~' -- bash -lc $remoteCmd
     }
