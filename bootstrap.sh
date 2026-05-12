@@ -167,15 +167,15 @@ install_powerlevel10k() {
 #   - adds ~/.local/bin, mise shims, and the userland micromamba env to PATH
 #   - sources secrets.zsh (POSIX-compatible content; works in bash too)
 wire_bash_secrets() {
-  local marker='# dotfiles: bash environment (PATH + secrets)'
+  local marker='# dotfiles: bash environment v2 (PATH + env + secrets)'
   local rc
   for rc in "$HOME/.bashrc" "$HOME/.profile"; do
     [[ -e "$rc" ]] || continue
     if ! grep -qF "$marker" "$rc" 2>/dev/null; then
-      log "Adding bash env block to $rc"
+      log "Adding bash env block (v2) to $rc"
       cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment (PATH + secrets)
+# dotfiles: bash environment v2 (PATH + env + secrets)
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -184,6 +184,9 @@ for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micro
 done
 unset _d
 export PATH
+export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7}"
+export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 SNIPPET
     fi

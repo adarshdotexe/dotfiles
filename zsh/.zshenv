@@ -25,7 +25,14 @@ export LC_ALL="${LC_ALL:-en_US.UTF-8}"
 
 export MISE_DATA_DIR="$HOME/.local/share/mise"
 
+# Anthropic / Claude Code config (non-secret URL/model). Set here in .zshenv so
+# non-interactive zsh (e.g. `zsh -c 'claude ...'`) also picks them up.
+# Use ${VAR:-default} so existing env values (e.g. from sshd pam_env) win.
+export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7}"
+export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
+
 # Secrets — sourced eagerly so non-interactive zsh (e.g. `zsh -c '...'`) also
-# has the keys. The same source line in .zshrc is now redundant but harmless.
+# has the keys.
 [[ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ]] && \
   source "$HOME/.config/dotfiles-secrets/secrets.zsh"
