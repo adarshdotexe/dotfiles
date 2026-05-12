@@ -69,9 +69,10 @@ inner="export TT_HOST_ALIAS='$host' \
 && chmod 0755 ~/.local/bin/tt-launch \
 && exec bash ~/.local/bin/tt-launch '$session'"
 
-# 3. et with reverse tunnel: remote port OPEN_PORT -> local Windows-side
-#    listener (via WSL localhost forwarding, which Windows treats as 127.0.0.1).
+# 3. et with reverse tunnel: remote port OPEN_PORT -> local OPEN_PORT.
+#    ET's tunnel syntax is `srcPort:dstPort` (two parts), not the ssh-style
+#    `srcPort:host:dstPort` — bind address defaults to localhost on both ends.
 #    -c runs the inner command instead of an interactive shell.
 exec et "${host}:${ET_PORT}" \
-  -rt "${OPEN_PORT}:127.0.0.1:${OPEN_PORT}" \
+  -rt "${OPEN_PORT}:${OPEN_PORT}" \
   -c "$inner"
