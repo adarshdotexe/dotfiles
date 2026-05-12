@@ -25,6 +25,10 @@
 
 $script:TtDbPath = Join-Path $env:USERPROFILE '.config\tt\db.tsv'
 
+# Base64-encoded helper script body (source: dotfiles/windows/tt-launch.sh).
+# Regenerate via: base64 -w0 dotfiles/windows/tt-launch.sh
+$script:TtLaunchB64 = 'IyEvdXNyL2Jpbi9lbnYgYmFzaAojIHR0LWxhdW5jaCDigJQgcmVtb3RlIGF0dGFjaCBoZWxwZXIuIEVtYmVkZGVkIGFzIGJhc2U2NCBpbiB0dC5wczEgLyB0dC56c2guCiMKIyBUaGlzIGZpbGUgaXMgdGhlIFNPVVJDRSBPRiBUUlVUSC4gVGhlIHdyYXBwZXJzICh0dC5wczEsIHR0LnpzaCkgYmFzZTY0LWVuY29kZQojIGl0cyBjb250ZW50cyBpbnRvIGEgY29uc3RhbnQuIE9uIGVhY2ggbGF1bmNoIHRoZSB3cmFwcGVyIHdyaXRlcyBhIGZyZXNoIGNvcHkKIyB0byB+Ly5sb2NhbC9iaW4vdHQtbGF1bmNoIG9uIHRoZSByZW1vdGUgYW5kIGV4ZWMncyBgYmFzaCA8ZmlsZT4gU0VTU0lPTmAgc28KIyB0aGF0IG1vc2gncyBQVFkgc3Vydml2ZXMgb24gc3RkaW4gKHBpcGluZyB0byBgYmFzaGAgd291bGQgcmVwbGFjZSBzdGRpbiB3aXRoCiMgdGhlIHBpcGUgYW5kIHRtdXggYXR0YWNoIHdvdWxkIGZhaWwgd2l0aCAib3BlbiB0ZXJtaW5hbCBmYWlsZWQ6IG5vdCBhCiMgdGVybWluYWwiKS4KIwojIFVzYWdlOiB0dC1sYXVuY2ggU0VTU0lPTgpzZXQgLWV1byBwaXBlZmFpbAoKIyBBbHdheXMtb24gdHJhY2UuIExpdmVzIGF0IH4vLmNhY2hlL3R0LWxhdW5jaC9sYXN0LWxhdW5jaC50cmFjZSBvbiB0aGUgcmVtb3RlLgpUUkFDRV9ESVI9IiRIT01FLy5jYWNoZS90dC1sYXVuY2giCm1rZGlyIC1wICIkVFJBQ0VfRElSIgpleGVjIDk+IiRUUkFDRV9ESVIvbGFzdC1sYXVuY2gudHJhY2UiCkJBU0hfWFRSQUNFRkQ9OQpQUzQ9JysgWyQoZGF0ZSArJUg6JU06JVMpXSAke0JBU0hfU09VUkNFIyMqL306JHtMSU5FTk99OiAnCnNldCAteAoKIyBWYWxpZGF0ZSBzZXNzaW9uIG5hbWUgKGRlZmVuc2UgaW4gZGVwdGgg4oCUIGFscmVhZHkgY2hlY2tlZCBob3N0LXNpZGUpLgpTRVNTSU9OPSIkezE6P21pc3Npbmcgc2Vzc2lvbiBuYW1lfSIKY2FzZSAiJFNFU1NJT04iIGluCiAgLSopIGVjaG8gInR0LWxhdW5jaDogc2Vzc2lvbiBtdXN0IG5vdCBzdGFydCB3aXRoICctJyIgPiYyOyBleGl0IDIgOzsKZXNhYwpwcmludGYgJyVzJyAiJFNFU1NJT04iIHwgZ3JlcCAtRXEgJ15bQS1aYS16MC05Ll8tXXsxLDY0fSQnIFwKICB8fCB7IGVjaG8gInR0LWxhdW5jaDogaW52YWxpZCBzZXNzaW9uIG5hbWUiID4mMjsgZXhpdCAyOyB9CgojIEV4cGxpY2l0IGVudiBhY3RpdmF0aW9uIOKAlCBsb2dpbiBiYXNoIG9uIFJvY2t5IDggZG9lc24ndCBzb3VyY2UgLmJhc2hyYywgYW5kCiMgbWljcm9tYW1iYSBhY3RpdmF0aW9uIGxpdmVzIGluIC5iYXNocmMgb24gdGhlc2UgaG9zdHMuIFNvdXJjZSB0aGUgdXN1YWwKIyBzdGFydHVwIGZpbGVzIHNvIFBBVEggcGlja3MgdXAgfi8ubG9jYWwvYmluIChzZXNoLCBtaWNyb21hbWJhKS4KIwojIFJlbGF4IHN0cmljdG5lc3MgYXJvdW5kIHRoZSBzb3VyY2VzOiBkaXN0cm9zJyByYyBmaWxlcyByb3V0aW5lbHkgcmVmZXJlbmNlCiMgdW5zZXQgdmFyaWFibGVzICgkSElTVENPTlRST0wsICRQUzEsIOKApikgd2hpY2ggdHJpcCBgc2V0IC11YCwgYW5kIHRoZXkgdXNlCiMgcGlwZWxpbmVzIHRoYXQgbWF5IGxlZ2l0aW1hdGVseSBoYXZlIG5vbi16ZXJvIGV4aXRzICgkcGlwZWZhaWwpLiBSZXN0b3JlCiMgdGhlIHN0cmljdCBtb2RlIGFmdGVyd2FyZHMuCnNldCArZXVvIHBpcGVmYWlsClsgLXIgL2V0Yy9wcm9maWxlIF0gJiYgLiAvZXRjL3Byb2ZpbGUKWyAtciAiJEhPTUUvLnByb2ZpbGUiIF0gJiYgLiAiJEhPTUUvLnByb2ZpbGUiClsgLXIgIiRIT01FLy5iYXNocmMiIF0gJiYgLiAiJEhPTUUvLmJhc2hyYyIKc2V0IC1ldW8gcGlwZWZhaWwKCiMgTWljcm9tYW1iYSBhY3RpdmF0aW9uIChuby1vcCBpZiBhYnNlbnQpLiBBY3RpdmF0ZXMgdGhlIGBkb3RmaWxlc2AgZW52IGlmCiMgcHJlc2VudCBzbyB0bXV4L3Nlc2ggZnJvbSB0aGF0IGVudiBsYW5kIG9uIFBBVEguCmlmIFsgLXggIiRIT01FLy5sb2NhbC9iaW4vbWljcm9tYW1iYSIgXTsgdGhlbgogIGV4cG9ydCBNQU1CQV9FWEU9IiRIT01FLy5sb2NhbC9iaW4vbWljcm9tYW1iYSIKICBleHBvcnQgTUFNQkFfUk9PVF9QUkVGSVg9IiR7TUFNQkFfUk9PVF9QUkVGSVg6LSRIT01FLy5sb2NhbC9taWNyb21hbWJhfSIKICBldmFsICIkKCIkTUFNQkFfRVhFIiBzaGVsbCBob29rIC0tc2hlbGwgYmFzaCkiCiAgWyAtZCAiJE1BTUJBX1JPT1RfUFJFRklYL2VudnMvZG90ZmlsZXMiIF0gJiYgbWljcm9tYW1iYSBhY3RpdmF0ZSBkb3RmaWxlcwpmaQoKZXhwb3J0IFRUX0hPU1RfQUxJQVM9IiR7VFRfSE9TVF9BTElBUzotJHtIT1NUTkFNRSUlLip9fSIKCiMgdG11eCBtdXN0IGJlIG9uIFBBVEguCmNvbW1hbmQgLXYgdG11eCA+L2Rldi9udWxsIHx8IHsgZWNobyAidHQtbGF1bmNoOiB0bXV4IG5vdCBvbiBQQVRIIiA+JjI7IGV4aXQgMzsgfQoKIyAyLXRpZXIgYXR0YWNoIGxhZGRlcjoKIyAgIDEuIHNlc2ggY29ubmVjdCDigJQgaGFuZGxlcyBleGlzdGluZy10bXV4IChwcmVmaXggbWF0Y2gpIEFORCB6b3hpZGUtcGF0aCBjcmVhdGUKIyAgIDIuIGZhbGxiYWNrOiB0bXV4IG5ldy1zZXNzaW9uIC1BcyDigJQgZm9yIGdlbnVpbmVseS1uZXcgc2Vzc2lvbnMgc2VzaCBkb2Vzbid0IGtub3cKaWYgY29tbWFuZCAtdiBzZXNoID4vZGV2L251bGwgMj4mMTsgdGhlbgogIGV4ZWMgc2VzaCBjb25uZWN0ICIkU0VTU0lPTiIgfHwgdHJ1ZQpmaQpleGVjIHRtdXggbmV3LXNlc3Npb24gLUFzICIkU0VTU0lPTiIK'
+
 function _Tt-ReadDb {
     $dir = Split-Path $script:TtDbPath
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory $dir -Force | Out-Null }
@@ -130,39 +134,46 @@ function _Tt-Launch {
     $alias   = $E.Host
     $session = $E.Session
     # Defense-in-depth session-name validation. The remote helper re-validates,
-    # but rejecting here stops any wt/wsl tab from opening on bad input.
+    # but rejecting here stops any wt/wsl/mosh tab from opening on bad input.
+    # Disallow leading '-' (avoids being parsed as an option) and constrain to
+    # the safe character class.
     if ($session.StartsWith('-') -or $session -notmatch '^[A-Za-z0-9._-]{1,64}$') {
         Write-Error "tt: invalid session name '$session' -- must match [A-Za-z0-9._-]{1,64} and not start with '-'"
         return
     }
-    # NOTE: the URL-bridge listener lives in WSL, not on Windows. ET runs in
-    # WSL, so the `-rt 8765:127.0.0.1:8765` tunnel's destination is WSL's
-    # localhost. tt-et-launch.sh spawns the WSL-side tt-listener.py before
-    # invoking et.
     $distro = if ($env:TT_WSL_DISTRO) { $env:TT_WSL_DISTRO } else { 'Ubuntu' }
+    $b64 = $script:TtLaunchB64
+    # Inner remote command:
+    #   1. mkdir + echo <b64> | base64 -d > ~/.local/bin/tt-launch (writes a
+    #      fresh helper every launch — wrappers and helper stay in sync).
+    #   2. chmod 0755 — make the helper executable (cosmetic; we `bash <file>`
+    #      so it isn't strictly required, but helps anyone poking at it).
+    #   3. exec bash ~/.local/bin/tt-launch SESSION — reads the helper FROM
+    #      DISK so stdin stays attached to mosh's PTY (piping the script to
+    #      `bash` would lose the PTY and tmux attach would fail with
+    #      "open terminal failed: not a terminal").
+    # No `;` anywhere in this string — `&&` only. wt.exe's action-splitter
+    # treats unescaped `;` as a new-action delimiter inside the command, so
+    # keeping it out avoids accidental tab fragmentation.
+    # `TT_HOST_ALIAS=<alias>` is exported so the helper renders the tmux title
+    # with the ssh-config alias (BAN, UFLWPE) rather than the remote's actual
+    # hostname (dc4-container-xterm-28). The helper's fallback `${HOSTNAME%%.*}`
+    # would otherwise win.
+    $remote = "export TT_HOST_ALIAS='$alias' && mkdir -p ~/.local/bin && echo $b64 | base64 -d > ~/.local/bin/tt-launch && chmod 0755 ~/.local/bin/tt-launch && exec bash ~/.local/bin/tt-launch '$session'"
     if ($alias -eq 'WSL') {
-        # Local WSL — no transport. tt-launch is bootstrap-deployed at
-        # ~/.local/bin/tt-launch (a symlink to the repo file), so we just
-        # invoke it directly with TT_HOST_ALIAS pinned to WSL.
-        $bashCmd = "TT_HOST_ALIAS=WSL exec tt-launch '$session'"
-        & $wt -w 0 new-tab --title "WSL:$session" wsl.exe -d $distro -- bash -lc $bashCmd
+        # Local WSL — no mosh.
+        & $wt -w 0 new-tab --title "WSL:$session" wsl.exe -d $distro -- bash -c $remote
     } else {
-        # Remote via EternalTerminal. tt-et-launch (WSL-side helper installed
-        # by bootstrap.sh) handles: starting etserver on the remote via SSH if
-        # it's not running, opening the reverse tunnel for the URL bridge, and
-        # invoking et with a short remote command that calls the bootstrap-
-        # deployed `tt-launch` helper.
-        #
-        # wt's new-tab joins argv after `--` with spaces, dropping any quoting
-        # built for `"$@"`. Bake the args into a single bash -lc string — safe
-        # because $alias was matched against the ssh-config Host list and
-        # $session passed `^[A-Za-z0-9._-]{1,64}$` validation.
-        $bashCmd = "tt-et-launch '$alias' '$session'"
+        # Remote via mosh. wt's post-`--` argv form passes the rest as a flat
+        # argv to wsl.exe so wt doesn't interpret `;` / `\` in the command.
+        # MOSH_TITLE_NOPREFIX=1 stops mosh-client from prepending "[mosh] " to
+        # the window title (undocumented but supported since mosh 1.3).
         $wtArgs = @(
             '-w','0','new-tab','--title',"${alias}:${session}",
             '--',
             'wsl.exe','-d',$distro,'--',
-            'bash','-lc',$bashCmd
+            'env','MOSH_TITLE_NOPREFIX=1','LC_ALL=C.UTF-8','LANG=C.UTF-8',
+            'mosh',$alias,'--','bash','-c',$remote
         )
         & $wt @wtArgs
     }

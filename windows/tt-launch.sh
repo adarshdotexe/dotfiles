@@ -52,15 +52,6 @@ fi
 
 export TT_HOST_ALIAS="${TT_HOST_ALIAS:-${HOSTNAME%%.*}}"
 
-# Browser bridge: any process that opens a URL inside this session is routed
-# through ~/.local/bin/tt-open, which POSTs to the Windows-side listener over
-# the et reverse-tunnel. Outside an et session the curl fails fast (see
-# tt-open). The wrapper exports BROWSER already, but we re-set it here so
-# `tmux new-session` inherits it cleanly into the session env.
-if [ -x "$HOME/.local/bin/tt-open" ]; then
-  export BROWSER="$HOME/.local/bin/tt-open"
-fi
-
 # tmux must be on PATH.
 command -v tmux >/dev/null || { echo "tt-launch: tmux not on PATH" >&2; exit 3; }
 

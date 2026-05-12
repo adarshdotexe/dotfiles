@@ -400,10 +400,20 @@ tmux_conf_urlscan_options="--compact --dedupe"
 # this is the place to override or undo settings
 
 # increase history size
-set -g history-limit 50000
+set -g history-limit 100000
 
-# start with mouse mode enabled
+# start with mouse mode enabled — wheel-scroll auto-enters copy mode and
+# pages through tmux's history (the 100k lines above). To scroll Windows
+# Terminal's own buffer (e.g. when tmux is on the alternate screen for vim
+# or claude code), hold Shift while scrolling.
 set -g mouse on
+
+# In copy mode, wheel-scroll a half page at a time instead of 5 lines.
+# Much closer to "feels like a normal terminal".
+bind-key -T copy-mode-vi WheelUpPane   send-keys -X -N 2 scroll-up
+bind-key -T copy-mode-vi WheelDownPane send-keys -X -N 2 scroll-down
+bind-key -T copy-mode    WheelUpPane   send-keys -X -N 2 scroll-up
+bind-key -T copy-mode    WheelDownPane send-keys -X -N 2 scroll-down
 
 # force Vi mode
 #   really you should export VISUAL or EDITOR environment variable, see manual
