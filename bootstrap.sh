@@ -152,6 +152,7 @@ install_eternal_terminal() {
   # subtree which fights cleanly with this build setup.
   mamba_install \
     cmake libprotobuf protobuf libsodium gflags openssl zlib pcre2 \
+    brotli libbrotlidec libbrotlienc libbrotlicommon \
     gcc_linux-64 gxx_linux-64 \
     || { err "Failed to install EternalTerminal build deps via micromamba"; return 1; }
 
