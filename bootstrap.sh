@@ -162,6 +162,23 @@ install_powerlevel10k() {
   fi
 }
 
+# ------------------------------------------------------------------ bash secrets
+# secrets.zsh content is plain POSIX `export X="Y"` — works in bash too.
+# This appends a guarded source line to ~/.bashrc and ~/.profile (idempotent)
+# so bash login + interactive shells also get ANTHROPIC_API_KEY etc.
+wire_bash_secrets() {
+  local marker='# dotfiles-secrets: source for bash'
+  local line='[ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"'
+  local rc
+  for rc in "$HOME/.bashrc" "$HOME/.profile"; do
+    [[ -e "$rc" ]] || continue
+    if ! grep -qF "$marker" "$rc" 2>/dev/null; then
+      log "Adding secrets source to $rc"
+      printf '\n%s\n%s\n' "$marker" "$line" >> "$rc"
+    fi
+  done
+}
+
 # ------------------------------------------------------------------ claude rule
 wire_claude_rule() {
   local claude_md="$HOME/.claude/CLAUDE.md"
@@ -262,6 +279,9 @@ bash "$DOTFILES_DIR/link.sh"
 
 # Stage 7: secrets repo (after link, so .zshrc is ready to source it).
 ensure_secrets_repo
+
+# Stage 8a: also make bash see ANTHROPIC_API_KEY etc.
+wire_bash_secrets
 
 # Stage 8: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
 wire_claude_rule
