@@ -162,19 +162,30 @@ install_powerlevel10k() {
   fi
 }
 
-# ------------------------------------------------------------------ bash secrets
-# secrets.zsh content is plain POSIX `export X="Y"` — works in bash too.
-# This appends a guarded source line to ~/.bashrc and ~/.profile (idempotent)
-# so bash login + interactive shells also get ANTHROPIC_API_KEY etc.
+# ------------------------------------------------------------------ bash env
+# Appends a guarded init block to ~/.bashrc and ~/.profile (idempotent):
+#   - adds ~/.local/bin, mise shims, and the userland micromamba env to PATH
+#   - sources secrets.zsh (POSIX-compatible content; works in bash too)
 wire_bash_secrets() {
-  local marker='# dotfiles-secrets: source for bash'
-  local line='[ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"'
+  local marker='# dotfiles: bash environment (PATH + secrets)'
   local rc
   for rc in "$HOME/.bashrc" "$HOME/.profile"; do
     [[ -e "$rc" ]] || continue
     if ! grep -qF "$marker" "$rc" 2>/dev/null; then
-      log "Adding secrets source to $rc"
-      printf '\n%s\n%s\n' "$marker" "$line" >> "$rc"
+      log "Adding bash env block to $rc"
+      cat >> "$rc" <<'SNIPPET'
+
+# dotfiles: bash environment (PATH + secrets)
+for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin"; do
+  case ":$PATH:" in
+    *":$_d":*) ;;
+    *) [ -d "$_d" ] && PATH="$_d:$PATH" ;;
+  esac
+done
+unset _d
+export PATH
+[ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
+SNIPPET
     fi
   done
 }
