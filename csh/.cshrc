@@ -496,6 +496,7 @@ unset _d
 setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
 setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-7[1m]'
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
+setenv CLAUDE_CODE_NO_FLICKER 1
 
 # Secrets from the private dotfiles-secrets repo (cloned by bootstrap).
 if (-r ~/.config/dotfiles-secrets/secrets.csh) source ~/.config/dotfiles-secrets/secrets.csh

@@ -98,6 +98,7 @@ export GLAB_HOST="${GLAB_HOST:-gitlab-master.nvidia.com}"
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
 export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
+export CLAUDE_CODE_NO_FLICKER=1
 
 # -----------------------------------------------------------------------------
 # 5. Aliases — sourced from ~/.aliases (also a symlinked dotfile)
