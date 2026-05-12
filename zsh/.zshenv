@@ -13,6 +13,9 @@ typeset -U path PATH
 # mise shims fallback for non-interactive subshells.
 [[ -d "$HOME/.local/share/mise/shims" ]] && path=("$HOME/.local/share/mise/shims" $path)
 
+# bun global bins (codex, etc.) — bootstrap Stage 10 installs here.
+[[ -d "$HOME/.bun/bin" ]] && path=("$HOME/.bun/bin" $path)
+
 export PATH
 
 # Defaults useful even for non-interactive ssh-as-command invocations.

@@ -298,7 +298,7 @@ wire_bash_secrets() {
       cat >> "$rc" <<'SNIPPET'
 
 # dotfiles: bash environment v2 (PATH + env + secrets)
-for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin"; do
+for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
     *) [ -d "$_d" ] && PATH="$_d:$PATH" ;;
@@ -506,7 +506,7 @@ fi
 # Stage 10: install Claude Code and OpenAI Codex CLIs.
 # Claude uses its official installer (drops binary into ~/.local/bin).
 # Codex ships as an npm package; install via bun (provisioned by Stage 9 mise).
-export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/.bun/bin:$PATH"
 if ! has claude; then
   log "Installing Claude Code"
   curl -fsSL https://claude.ai/install.sh | bash >/tmp/claude-install.log 2>&1 \

@@ -487,6 +487,7 @@ foreach _d ( \
     "$HOME/.local/bin" \
     "$HOME/.local/share/mise/shims" \
     "$HOME/.local/micromamba/envs/dotfiles/bin" \
+    "$HOME/.bun/bin" \
 )
   if (-d "$_d") set path = ( "$_d" $path:q )
 end

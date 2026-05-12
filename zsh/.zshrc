@@ -71,6 +71,7 @@ for d in \
 # Userland (everywhere — bootstrap installs into here)
 _add_path "$HOME/.local/micromamba/envs/dotfiles/bin"
 _add_path "$HOME/.local/bin"
+_add_path "$HOME/.bun/bin"
 _add_path "$HOME/.deno/bin"
 
 unfunction _add_path
