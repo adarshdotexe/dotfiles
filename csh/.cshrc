@@ -255,7 +255,13 @@ endif
 ##echo "trace_c03"
 
 if ($OSTYPE == "Linux" || $OSTYPE == "SunOS") then
-  setenv LD_LIBRARY_PATH `addtopath.pl -quiet LD_LIBRARY_PATH /usr/lib ${HOME}/lib .`
+  # addtopath.pl is an NVIDIA env helper — not on every host (e.g. UFLWPE).
+  # Skip silently if absent so .cshrc doesn't pollute stdout for ssh-launched
+  # commands (mosh-server parses that output).
+  which addtopath.pl >& /dev/null
+  if ($status == 0) then
+    setenv LD_LIBRARY_PATH `addtopath.pl -quiet LD_LIBRARY_PATH /usr/lib ${HOME}/lib .`
+  endif
 endif
 
 set OSREV=`uname -r`
@@ -298,7 +304,9 @@ endif
 ##echo "trace_c05"
 
 if ($OSTYPE == "Linux" || $OSTYPE == "SunOS") then
-  source ${HOME}/.cshrc_tools
+  # .cshrc_tools is NVIDIA env-tools sourcer — only present on BAN/SC-like
+  # hosts. Skip silently elsewhere (UFLWPE etc.) to avoid stdout pollution.
+  if (-e ${HOME}/.cshrc_tools) source ${HOME}/.cshrc_tools
 endif
 
 if ($OSTYPE == "Win32") then
