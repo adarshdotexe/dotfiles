@@ -185,7 +185,7 @@ done
 unset _d
 export PATH
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 SNIPPET

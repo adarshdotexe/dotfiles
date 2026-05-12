@@ -19,7 +19,7 @@ startup_command = ""
 
 [[session]]
 name = "UFLWPE"
-path = "~/repos/frappe"
+path = "/home/scratch.advarshney_gpu/frappe"
 startup_command = ""
 
 [[session]]

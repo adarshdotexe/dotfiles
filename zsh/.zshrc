@@ -96,7 +96,7 @@ export GLAB_HOST="${GLAB_HOST:-gitlab-master.nvidia.com}"
 
 # Anthropic / Claude Code config (non-secret URL/model bits; API key in secrets repo)
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 
 # -----------------------------------------------------------------------------
