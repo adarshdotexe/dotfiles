@@ -286,18 +286,28 @@ install_powerlevel10k() {
 
 # ------------------------------------------------------------------ bash env
 # Appends a guarded init block to ~/.bashrc and ~/.profile (idempotent):
-#   - adds ~/.local/bin, mise shims, and the userland micromamba env to PATH
+#   - adds ~/.local/bin, mise shims, micromamba env, ~/.bun/bin to PATH
 #   - sources secrets.zsh (POSIX-compatible content; works in bash too)
+#
+# Migration: bumping BEGIN/END markers each schema change. On every run we
+# strip any prior dotfiles-managed block (v2 or v3) before re-emitting v3,
+# so updates to ANTHROPIC_MODEL etc. land on already-bootstrapped hosts.
 wire_bash_secrets() {
-  local marker='# dotfiles: bash environment v2 (PATH + env + secrets)'
   local rc
   for rc in "$HOME/.bashrc" "$HOME/.profile"; do
     [[ -e "$rc" ]] || continue
-    if ! grep -qF "$marker" "$rc" 2>/dev/null; then
-      log "Adding bash env block (v2) to $rc"
-      cat >> "$rc" <<'SNIPPET'
+    # Strip any previously-managed block (legacy v2 single-marker form, plus
+    # v3 BEGIN/END form). Both end on the secrets.zsh source line.
+    if grep -qE '^# dotfiles: bash environment v[23]' "$rc"; then
+      log "Removing stale dotfiles bash block from $rc"
+      # Strip v3 BEGIN/END block first (if present), then v2 (start..secrets.zsh).
+      perl -i -ne 'print unless /^# dotfiles: bash environment v3 BEGIN/ .. /^# dotfiles: bash environment v3 END/' "$rc"
+      perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
+    fi
+    log "Adding bash env block (v3) to $rc"
+    cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v2 (PATH + env + secrets)
+# dotfiles: bash environment v3 BEGIN
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -310,13 +320,10 @@ export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.co
 export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
-# Anything that wants to open a URL goes through ~/.local/bin/tt-open, which
-# POSTs to the Windows-side listener over the et reverse-tunnel (see tt).
-# Outside an et session the curl fails fast and the URL is just printed.
 command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
+# dotfiles: bash environment v3 END
 SNIPPET
-    fi
   done
 }
 
