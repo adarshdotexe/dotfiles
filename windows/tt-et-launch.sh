@@ -73,6 +73,9 @@ inner="export TT_HOST_ALIAS='$host' \
 #    ET's tunnel syntax is `srcPort:dstPort` (two parts), not the ssh-style
 #    `srcPort:host:dstPort` — bind address defaults to localhost on both ends.
 #    -c runs the inner command instead of an interactive shell.
+# Use `-r` (short for --reversetunnel), NOT `-rt`. ET 6.2.11 parses `-rt`
+# as `-r t…` and fails with "Tunnel argument must have source and
+# destination between a ':'".
 exec et "${host}:${ET_PORT}" \
-  -rt "${OPEN_PORT}:${OPEN_PORT}" \
+  -r "${OPEN_PORT}:${OPEN_PORT}" \
   -c "$inner"
