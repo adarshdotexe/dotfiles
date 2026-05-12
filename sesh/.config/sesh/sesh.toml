@@ -18,7 +18,7 @@ path = "~/AdarshOS"
 startup_command = "claude"
 
 [[session]]
-name = "frappe (UFLWPE)"
+name = "UFLWPE"
 path = "~/repos/frappe"
 startup_command = "claude"
 
