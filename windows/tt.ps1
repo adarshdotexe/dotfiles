@@ -116,20 +116,15 @@ function _Tt-Launch {
 function tt {
     [CmdletBinding(DefaultParameterSetName = 'Pick')]
     param(
-        [Parameter(ParameterSetName = 'Pick', Position = 0)]
-        [string] $Query,
-        [Parameter(ParameterSetName = 'Pick', Position = 1)]
-        [string] $SessionArg,
-
         [Parameter(ParameterSetName = 'Add')]
         [switch] $a,
-        [Parameter(ParameterSetName = 'Add', Position = 0)]
-        [string] $AddHost,
-        [Parameter(ParameterSetName = 'Add', Position = 1)]
-        [string] $AddSession,
-
         [Parameter(ParameterSetName = 'List')]
-        [switch] $l
+        [switch] $l,
+
+        # All remaining args. In Pick mode they're zoxide-style fuzzy patterns
+        # (all must match). In Add mode they're HOST then SESSION.
+        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+        [string[]] $Patterns
     )
 
     $db  = _Tt-ReadDb
@@ -154,17 +149,19 @@ function tt {
 
     # -a: add/promote without launching
     if ($PSCmdlet.ParameterSetName -eq 'Add') {
-        if (-not $AddHost -or -not $AddSession) {
+        if (-not $Patterns -or $Patterns.Count -lt 2) {
             Write-Error "Usage: tt -a HOST SESSION"; return
         }
-        $key = "${AddHost}`t${AddSession}"
+        $addHost    = $Patterns[0]
+        $addSession = $Patterns[1]
+        $key = "${addHost}`t${addSession}"
         if (-not $db.ContainsKey($key)) {
-            $db[$key] = [PSCustomObject]@{ Host=$AddHost; Session=$AddSession; Rank=0; LastUsed=0 }
+            $db[$key] = [PSCustomObject]@{ Host=$addHost; Session=$addSession; Rank=0.0; LastUsed=[int64]0 }
         }
         $db[$key].Rank     += 1
         $db[$key].LastUsed  = $now
         _Tt-WriteDb $db
-        "Promoted: $AddHost / $AddSession (rank=$($db[$key].Rank))"
+        "Promoted: $addHost / $addSession (rank=$($db[$key].Rank))"
         return
     }
 
@@ -172,19 +169,32 @@ function tt {
     $ranked = $db.Values | Sort-Object -Property @{Expression={_Tt-Score $_ $now}; Descending=$true}
 
     $pickedEntry = $null
-    if ($Query -and $SessionArg) {
-        # Two args: direct launch of HOST + SESSION. Create entry if new.
-        $key = "${Query}`t${SessionArg}"
-        if (-not $db.ContainsKey($key)) {
-            $db[$key] = [PSCustomObject]@{ Host=$Query; Session=$SessionArg; Rank=0.0; LastUsed=[int64]0 }
-        }
-        $pickedEntry = $db[$key]
-    } elseif ($Query) {
+    if ($Patterns -and $Patterns.Count -gt 0) {
+        # zoxide-style: every pattern must appear (case-insensitive) somewhere in
+        # "<host> <session>". Highest-frecency hit wins.
+        $needles = $Patterns | ForEach-Object { $_.ToLower() }
         $pickedEntry = $ranked | Where-Object {
-            ("$($_.Host) $($_.Session)") -like "*$Query*"
+            $hs = ("$($_.Host) $($_.Session)").ToLower()
+            $ok = $true
+            foreach ($n in $needles) { if (-not $hs.Contains($n)) { $ok = $false; break } }
+            $ok
         } | Select-Object -First 1
+
+        if (-not $pickedEntry -and $Patterns.Count -eq 2) {
+            # Fallback: `tt HOST NEW_SESSION` — if first pattern is exactly a known
+            # host, treat as direct launch (sesh will create the session on the fly).
+            $knownHosts = $db.Values | ForEach-Object { $_.Host } | Sort-Object -Unique
+            if ($knownHosts -contains $Patterns[0]) {
+                $key = "$($Patterns[0])`t$($Patterns[1])"
+                if (-not $db.ContainsKey($key)) {
+                    $db[$key] = [PSCustomObject]@{ Host=$Patterns[0]; Session=$Patterns[1]; Rank=0.0; LastUsed=[int64]0 }
+                }
+                $pickedEntry = $db[$key]
+            }
+        }
+
         if (-not $pickedEntry) {
-            Write-Error "No match for '$Query'"; return
+            Write-Error "No match for: $($Patterns -join ' ')"; return
         }
     } else {
         # Build TSV: HOST<TAB>SESSION, pipe to wsl fzf (--reverse so top item = top of screen).

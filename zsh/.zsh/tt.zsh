@@ -114,15 +114,31 @@ tt() {
   esac
 
   local picked
-  if [[ -n "$1" && -n "$2" ]]; then
-    # Two args: direct launch of HOST + SESSION (create entry if new).
-    picked="$1	$2"
-  elif [[ -n "$1" ]]; then
-    # Fuzzy substring match against "host session", pick top-ranked
-    picked=$(_tt_score_awk "$db" | awk -F'\t' -v q="$1" '
-      tolower($2 " " $3) ~ tolower(q) { print $2 "\t" $3; exit }
+  if [[ $# -gt 0 ]]; then
+    # zoxide-style: every arg must appear (case-insensitive) somewhere in
+    # "<host> <session>". Highest-frecency hit wins.
+    local pats="$*"
+    picked=$(_tt_score_awk "$db" | awk -F'\t' -v pats="$pats" '
+      BEGIN { n = split(pats, p, " ") }
+      {
+        haystack = tolower($2 " " $3)
+        ok = 1
+        for (i = 1; i <= n; i++) {
+          if (index(haystack, tolower(p[i])) == 0) { ok = 0; break }
+        }
+        if (ok) { print $2 "\t" $3; exit }
+      }
     ')
-    [[ -z "$picked" ]] && { echo "no match for: $1" >&2; return 1; }
+
+    if [[ -z "$picked" && $# -eq 2 ]]; then
+      # Fallback: `tt HOST NEW_SESSION` — if first arg is exactly a known host,
+      # treat as direct launch (sesh creates the session on the fly).
+      if awk -v h="$1" 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i==h){found=1;exit}} END{exit !found}' "$HOME/.ssh/config" 2>/dev/null; then
+        picked="$1	$2"
+      fi
+    fi
+
+    [[ -z "$picked" ]] && { echo "no match for: $*" >&2; return 1; }
   else
     picked=$(_tt_score_awk "$db" \
       | awk -F'\t' '{print $2 "\t" $3}' \
