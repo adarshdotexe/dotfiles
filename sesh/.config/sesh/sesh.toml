@@ -1,33 +1,11 @@
+# Minimal sesh config. No pre-configured project sessions — let sesh discover
+# what's available on each host via its three default sources:
+#
+#   - zoxide directories (cd somewhere once and it's pickable)
+#   - existing tmux sessions
+#   - ssh hosts from ~/.ssh/config
+#
+# `sesh connect <name>` does fuzzy resolution across all three. Inside tmux,
+# Prefix + K opens an interactive picker.
+
 default_session = { startup_command = "" }
-
-# Add or remove configured project sessions here. Paths use ~ for portability;
-# entries whose path does not exist on a given host are just skipped by sesh.
-# zoxide directories and ssh hosts are pulled in automatically by `sesh list`.
-
-[[session]]
-name = "home"
-path = "~"
-
-[[session]]
-name = "dotfiles"
-path = "~/repos/dotfiles"
-
-[[session]]
-name = "AdarshOS"
-path = "~/AdarshOS"
-startup_command = ""
-
-[[session]]
-name = "UFLWPE"
-path = "/home/scratch.advarshney_gpu/frappe"
-startup_command = ""
-
-[[session]]
-name = "pace"
-path = "~/repos/power-architecture-chat-engine"
-startup_command = ""
-
-[[session]]
-name = "power-arch-claude-plugins"
-path = "~/repos/power-arch-claude-plugins"
-startup_command = ""
