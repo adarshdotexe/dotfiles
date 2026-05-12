@@ -129,6 +129,107 @@ mamba_install() {
   fi
 }
 
+# ------------------------------------------------------------------ eternal-terminal
+# Build EternalTerminal from source into $HOME/.local. Replaces mosh; gives us
+# TCP-only transport (no UDP firewall headaches), native scrollback, and
+# built-in port forwarding (used for the URL-open bridge — see install_tt_open).
+# Build deps live in the micromamba `dotfiles` env (libsodium, libprotobuf,
+# gflags, openssl). RPATH points at that env so runtime resolution works.
+install_eternal_terminal() {
+  if [[ -x "$LOCAL_BIN/et" && -x "$LOCAL_BIN/etserver" ]]; then
+    log "EternalTerminal already installed at $LOCAL_BIN"
+    return 0
+  fi
+  log "Installing EternalTerminal from source (3-8 min)"
+
+  # Build + runtime deps. cmake comes from micromamba so we have a known-recent
+  # version even on hosts where the system cmake is ancient. gcc_linux-64 /
+  # gxx_linux-64 give us a libstdc++ that matches conda's libprotobuf /
+  # libabsl — without them the link fails with "undefined reference to
+  # std::__throw_bad_array_new_length()@GLIBCXX_3.4.29" because Rocky 8's
+  # system gcc 8.5 has an older libstdc++ than conda was built against.
+  # DISABLE_SENTRY/CRASH_LOG/TELEMETRY: skip the sentry-native crashpad
+  # subtree which fights cleanly with this build setup.
+  mamba_install \
+    cmake libprotobuf protobuf libsodium gflags openssl zlib pcre2 \
+    gcc_linux-64 gxx_linux-64 \
+    || { err "Failed to install EternalTerminal build deps via micromamba"; return 1; }
+
+  local build_dir; build_dir=$(mktemp -d)
+  local rc=0
+
+  log "Cloning EternalTerminal -> $build_dir/et"
+  if ! git clone --depth 1 --recurse-submodules \
+       https://github.com/MisterTea/EternalTerminal.git "$build_dir/et" 2>&1 | tail -3; then
+    err "git clone EternalTerminal failed"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  local mamba_prefix="$MAMBA_ENV"
+  (
+    set -e
+    cd "$build_dir/et"
+    mkdir -p build && cd build
+    export PATH="$mamba_prefix/bin:$PATH"
+    # conda compiler binaries are prefixed; pin them so cmake doesn't fall
+    # back to the system /usr/bin/gcc (older libstdc++ -> link failure).
+    export CC="$mamba_prefix/bin/x86_64-conda-linux-gnu-gcc"
+    export CXX="$mamba_prefix/bin/x86_64-conda-linux-gnu-g++"
+    log "cmake configure (prefix=$HOME/.local, deps=$mamba_prefix)"
+    # -rpath-link teaches conda's bfd ld to look in /usr/lib64 when resolving
+    # SONAME deps of system libs like libselinux.so (which pulls in libpcre2).
+    # Without it, ld errors out with "undefined reference to pcre2_*" even
+    # though pcre2 is on the runtime ld.so.cache search path.
+    cmake .. \
+      -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
+      -DCMAKE_PREFIX_PATH="$mamba_prefix" \
+      -DCMAKE_INSTALL_RPATH="$mamba_prefix/lib" \
+      -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+      -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
+      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
+      -DBUILD_TESTING=OFF \
+      -DDISABLE_VCPKG=ON \
+      -DDISABLE_SENTRY=ON \
+      -DDISABLE_CRASH_LOG=ON \
+      -DDISABLE_TELEMETRY=ON \
+      > /tmp/et-cmake-config.log 2>&1
+    log "cmake build (5-10 min on first install)"
+    cmake --build . -j"$(nproc)" > /tmp/et-build.log 2>&1
+    log "cmake install"
+    cmake --install . > /tmp/et-install.log 2>&1
+  ) || rc=$?
+
+  rm -rf "$build_dir"
+
+  if [[ $rc -ne 0 ]]; then
+    err "EternalTerminal build failed (rc=$rc). Check /tmp/et-cmake-config.log, /tmp/et-build.log, /tmp/et-install.log"
+    return 1
+  fi
+  if [[ ! -x "$LOCAL_BIN/et" ]]; then
+    err "Build reported success but $LOCAL_BIN/et is missing"
+    return 1
+  fi
+  log "EternalTerminal: $("$LOCAL_BIN/et" --version 2>/dev/null | head -1 || echo present)"
+}
+
+# tt-open + tt-et-launch are kept as live symlinks to the source files in the
+# repo so a `git pull` on a remote is enough to update them — no re-bootstrap
+# needed.
+install_tt_helper() {
+  local name="$1" src_rel="$2"
+  local src="$DOTFILES_DIR/$src_rel"
+  local dst="$LOCAL_BIN/$name"
+  if [[ ! -r "$src" ]]; then
+    warn "tt helper source missing at $src; skipping $name"
+    return 0
+  fi
+  chmod +x "$src" 2>/dev/null || true
+  if [[ -L "$dst" || -e "$dst" ]]; then rm -f "$dst"; fi
+  ln -sf "$src" "$dst"
+  log "Linked $name -> $src"
+}
+
 # ------------------------------------------------------------------ oh-my-tmux
 install_oh_my_tmux() {
   if [[ -d "$HOME/.tmux" && ! -d "$HOME/.tmux/.git" ]]; then
@@ -187,6 +288,10 @@ export PATH
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
 export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
+# Anything that wants to open a URL goes through ~/.local/bin/tt-open, which
+# POSTs to the Windows-side listener over the et reverse-tunnel (see tt).
+# Outside an et session the curl fails fast and the URL is just printed.
+command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 SNIPPET
     fi
@@ -211,7 +316,7 @@ ensure_repo
 
 # Stage 1: try system install where possible.
 PM=$(detect_pm)
-WANT_SYS=(git curl tmux zsh mosh)
+WANT_SYS=(git curl tmux zsh)
 if has_sudo && [[ "$PM" != "none" ]]; then
   missing=()
   for p in "${WANT_SYS[@]}"; do has "$p" || missing+=("$p"); done
@@ -222,8 +327,8 @@ if has_sudo && [[ "$PM" != "none" ]]; then
 fi
 
 # Stage 2: anything still missing -> micromamba (userland).
+# Note: mosh removed; we use EternalTerminal (built from source — see Stage 3a).
 MAMBA_NEED=()
-has mosh-server || MAMBA_NEED+=(mosh)
 tmux_ok        || MAMBA_NEED+=(tmux)
 has zsh        || MAMBA_NEED+=(zsh)
 has bat        || MAMBA_NEED+=(bat)
@@ -267,6 +372,12 @@ if ! has sesh; then
   fi
   rm -rf "$tmp"
 fi
+
+# Stage 3a: EternalTerminal + tt helpers.
+install_eternal_terminal || warn "EternalTerminal install failed; tt won't connect remotely until fixed"
+install_tt_helper tt-open       windows/tt-open.sh
+install_tt_helper tt-et-launch  windows/tt-et-launch.sh
+install_tt_helper tt-listener   windows/tt-listener.py
 
 # Stage 4: oh-my-zsh + plugins + powerlevel10k.
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
