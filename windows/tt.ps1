@@ -105,10 +105,10 @@ function _Tt-Seed {
             }
         }
     }
-    # Prune rules:
-    #   - Host no longer in ssh config        -> drop (always)
-    #   - Session no longer in sesh.toml      -> drop if rank == 0 (seeded only;
-    #     user's promoted ad-hocs are kept)
+    # Prune: drop any entry whose Host isn't in the current ssh config OR
+    # whose Session isn't in the current sesh.toml. Ranks for renamed/removed
+    # hosts/sessions don't carry over (cleaner than tracking aliases).
+    # Ad-hoc sessions created via `tt -n` will need re-promoting after a rename.
     $validHosts = @{}
     foreach ($h in $hosts) { $validHosts[$h] = $true }
     $validSessions = @{}
@@ -116,10 +116,8 @@ function _Tt-Seed {
     $toRemove = @()
     foreach ($k in $Db.Keys) {
         $e = $Db[$k]
-        if (-not $validHosts.ContainsKey($e.Host)) { $toRemove += $k; continue }
-        if (-not $validSessions.ContainsKey($e.Session) -and $e.Rank -le 0) {
-            $toRemove += $k
-        }
+        if (-not $validHosts.ContainsKey($e.Host))       { $toRemove += $k; continue }
+        if (-not $validSessions.ContainsKey($e.Session)) { $toRemove += $k }
     }
     foreach ($k in $toRemove) { $Db.Remove($k) | Out-Null }
 }

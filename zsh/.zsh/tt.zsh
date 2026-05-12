@@ -35,8 +35,9 @@ _tt_seed() {
     done
   done
 
-  # Keep DB entries that either appear in $valid OR have rank > 0.
-  # Then append any (host, session) from $valid that's not already in DB.
+  # Keep ONLY (host, session) combos that appear in $valid. Anything else
+  # (renamed host or session) is dropped. Then append any (host, session)
+  # from $valid that's not already in DB.
   awk -F'\t' -v valid="$valid" '
     BEGIN {
       while ((getline line < valid) > 0) {
@@ -45,7 +46,7 @@ _tt_seed() {
     }
     NF == 4 {
       k = $1 FS $2
-      if (k in v || ($3 + 0) > 0) { print; have[k] = 1 }
+      if (k in v) { print; have[k] = 1 }
     }
     END {
       for (k in v) if (!(k in have)) {
