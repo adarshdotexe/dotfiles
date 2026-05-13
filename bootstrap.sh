@@ -518,8 +518,8 @@ if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
   mise install 2>&1 | tail -3 || warn "mise install had problems; rerun later"
 fi
 
-# Stage 10: install Claude Code and OpenAI Codex CLIs.
-# Claude uses its official installer (drops binary into ~/.local/bin).
+# Stage 10: install Claude Code, OpenAI Codex, and Cursor (cursor-agent) CLIs.
+# Claude and Cursor use their official installers (drop binaries into ~/.local/bin).
 # Codex ships as an npm package; install via bun (provisioned by Stage 9 mise).
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/.bun/bin:$PATH"
 if ! has claude; then
@@ -531,6 +531,11 @@ if ! has codex; then
   log "Installing OpenAI Codex CLI"
   bun add -g @openai/codex >/tmp/codex-install.log 2>&1 \
     || warn "codex install failed; see /tmp/codex-install.log"
+fi
+if ! has cursor-agent; then
+  log "Installing Cursor (cursor-agent)"
+  curl -fsS https://cursor.com/install | bash >/tmp/cursor-install.log 2>&1 \
+    || warn "cursor install failed; see /tmp/cursor-install.log"
 fi
 
 cat <<'EOF'
