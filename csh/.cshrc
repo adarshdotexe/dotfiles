@@ -501,3 +501,8 @@ setenv CLAUDE_CODE_NO_FLICKER 1
 
 # Secrets from the private dotfiles-secrets repo (cloned by bootstrap).
 if (-r ~/.config/dotfiles-secrets/secrets.csh) source ~/.config/dotfiles-secrets/secrets.csh
+
+# OpenAI-compatible config — same key as Anthropic on the NVIDIA inference gateway.
+if ($?ANTHROPIC_API_KEY) setenv OPENAI_API_KEY "$ANTHROPIC_API_KEY"
+setenv OPENAI_BASE_URL 'https://inference-api.nvidia.com/v1/'
+setenv OPENAI_MODEL 'openai/openai/gpt-5.5'

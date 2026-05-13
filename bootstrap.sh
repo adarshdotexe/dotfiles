@@ -298,16 +298,16 @@ wire_bash_secrets() {
     [[ -e "$rc" ]] || continue
     # Strip any previously-managed block (legacy v2 single-marker form, plus
     # v3 BEGIN/END form). Both end on the secrets.zsh source line.
-    if grep -qE '^# dotfiles: bash environment v[23]' "$rc"; then
+    if grep -qE '^# dotfiles: bash environment v[0-9]+' "$rc"; then
       log "Removing stale dotfiles bash block from $rc"
-      # Strip v3 BEGIN/END block first (if present), then v2 (start..secrets.zsh).
-      perl -i -ne 'print unless /^# dotfiles: bash environment v3 BEGIN/ .. /^# dotfiles: bash environment v3 END/' "$rc"
+      # Strip any vN BEGIN/END block (versioned), then legacy v2 (start..secrets.zsh).
+      perl -i -ne 'print unless /^# dotfiles: bash environment v\d+ BEGIN/ .. /^# dotfiles: bash environment v\d+ END/' "$rc"
       perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
     fi
-    log "Adding bash env block (v3) to $rc"
+    log "Adding bash env block (v4) to $rc"
     cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v3 BEGIN
+# dotfiles: bash environment v4 BEGIN
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -322,7 +322,10 @@ export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
 command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
-# dotfiles: bash environment v3 END
+export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
+export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}"
+export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
+# dotfiles: bash environment v4 END
 SNIPPET
   done
 }

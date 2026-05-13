@@ -101,6 +101,11 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
 
+# OpenAI-compatible config — same key as Anthropic on the NVIDIA inference gateway.
+export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
+export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}"
+export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
+
 # -----------------------------------------------------------------------------
 # 5. Aliases — sourced from ~/.aliases (also a symlinked dotfile)
 # -----------------------------------------------------------------------------
