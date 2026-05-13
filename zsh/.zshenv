@@ -36,8 +36,8 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
 
-# Headless xterm hosts (BAN/SC/UFLWPE) have no browser; force fail so MSAL-
-# based CLIs (fusion, az) drop to device-code flow instead of hanging.
+# Headless xterm hosts have no browser; set BROWSER=false so xdg-open
+# doesn't spawn anything. Doesn't fix MSAL hang (see bootstrap.sh comment).
 [[ -d "/home/scratch.${USER}_gpu" ]] && export BROWSER=false
 
 # Secrets — sourced eagerly so non-interactive zsh (e.g. `zsh -c '...'`) also

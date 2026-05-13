@@ -321,8 +321,10 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
 # Headless xterm hosts (BAN/SC/UFLWPE — detected by per-user scratch mount)
-# have no browser; force webbrowser.open() to fail so MSAL-based CLIs (fusion,
-# az, etc.) fall through to device-code flow instead of hanging on xdg-open.
+# have no browser; set BROWSER=false so xdg-open doesn't spawn a phantom
+# helper. Note: this does NOT force MSAL-based CLIs (fusion) to fall through
+# to device-code — MSAL ignores the return of webbrowser.open() and still
+# waits for a callback. Use a host with a real browser (WSL) for those logins.
 [ -d "/home/scratch.${USER}_gpu" ] && export BROWSER=false
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
