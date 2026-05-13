@@ -394,7 +394,7 @@ redirect_home_dirs
 
 # Stage 1: try system install where possible.
 PM=$(detect_pm)
-WANT_SYS=(git curl tmux zsh)
+WANT_SYS=(git curl tmux zsh bzip2 rsync)
 if has_sudo && [[ "$PM" != "none" ]]; then
   missing=()
   for p in "${WANT_SYS[@]}"; do has "$p" || missing+=("$p"); done
