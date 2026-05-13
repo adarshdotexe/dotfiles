@@ -498,6 +498,14 @@ if [[ -r "$SECRETS_DIR/ssh-config" ]]; then
   log "Linked $HOME/.ssh/config -> $SECRETS_DIR/ssh-config"
 fi
 
+# Stage 7b: lock down private key files in the secrets repo. git checks them
+# out 0644 by default and ssh refuses to use a world-readable key.
+if [[ -d "$SECRETS_DIR/keys" ]]; then
+  chmod 700 "$SECRETS_DIR/keys"
+  find "$SECRETS_DIR/keys" -type f \( -name '*.pem' -o -name 'id_*' \) \
+    -exec chmod 600 {} +
+fi
+
 # Stage 8a: also make bash see ANTHROPIC_API_KEY etc.
 wire_bash_secrets
 
