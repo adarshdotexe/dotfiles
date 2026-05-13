@@ -499,6 +499,9 @@ setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-6[1m]'
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
 setenv CLAUDE_CODE_NO_FLICKER 1
 
+# Headless xterm hosts have no browser; force MSAL-based CLIs to device-code flow.
+if (-d "/home/scratch.${USER}_gpu") setenv BROWSER false
+
 # Secrets from the private dotfiles-secrets repo (cloned by bootstrap).
 if (-r ~/.config/dotfiles-secrets/secrets.csh) source ~/.config/dotfiles-secrets/secrets.csh
 

@@ -304,10 +304,10 @@ wire_bash_secrets() {
       perl -i -ne 'print unless /^# dotfiles: bash environment v\d+ BEGIN/ .. /^# dotfiles: bash environment v\d+ END/' "$rc"
       perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
     fi
-    log "Adding bash env block (v4) to $rc"
+    log "Adding bash env block (v5) to $rc"
     cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v4 BEGIN
+# dotfiles: bash environment v5 BEGIN
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -320,12 +320,15 @@ export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.co
 export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
-command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
+# Headless xterm hosts (BAN/SC/UFLWPE — detected by per-user scratch mount)
+# have no browser; force webbrowser.open() to fail so MSAL-based CLIs (fusion,
+# az, etc.) fall through to device-code flow instead of hanging on xdg-open.
+[ -d "/home/scratch.${USER}_gpu" ] && export BROWSER=false
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
 export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}"
 export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
-# dotfiles: bash environment v4 END
+# dotfiles: bash environment v5 END
 SNIPPET
   done
 }
