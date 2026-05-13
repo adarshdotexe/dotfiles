@@ -523,17 +523,26 @@ fi
 
 # Stage 10: install Claude Code, OpenAI Codex, and Cursor (cursor-agent) CLIs.
 # Claude and Cursor use their official installers (drop binaries into ~/.local/bin).
-# Codex ships as an npm package; install via bun (provisioned by Stage 9 mise).
+# Codex ships as an npm package with platform-specific optionalDependencies
+# (@openai/codex-linux-x64 etc.) — bun's global install skips those and the
+# binary then refuses to run. Use npm (from mise node LTS) which handles them.
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/.bun/bin:$PATH"
 if ! has claude; then
   log "Installing Claude Code"
   curl -fsSL https://claude.ai/install.sh | bash >/tmp/claude-install.log 2>&1 \
     || warn "claude install failed; see /tmp/claude-install.log"
 fi
-if ! has codex; then
-  log "Installing OpenAI Codex CLI"
-  bun add -g @openai/codex >/tmp/codex-install.log 2>&1 \
+# Always (re)install codex via npm — running bootstrap repairs any prior
+# bun-installed copy that's missing the platform binary.
+if has npm; then
+  log "Installing OpenAI Codex CLI (npm)"
+  # Remove any bun-installed copy first so the npm one wins on PATH.
+  if has bun; then bun remove -g @openai/codex >/dev/null 2>&1 || true; fi
+  rm -f "$HOME/.bun/bin/codex"
+  npm install -g @openai/codex@latest >/tmp/codex-install.log 2>&1 \
     || warn "codex install failed; see /tmp/codex-install.log"
+else
+  warn "npm not on PATH; codex install skipped (mise install should have pinned node lts)"
 fi
 if ! has cursor-agent; then
   log "Installing Cursor (cursor-agent)"
