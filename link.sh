@@ -10,7 +10,7 @@ if [[ -z "${HOME:-}" ]]; then
 fi
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PKGS=(zsh tmux sesh git mise csh)
+PKGS=(zsh tmux sesh git mise csh codex)
 
 ts=$(date +%s)
 backup_one() {
