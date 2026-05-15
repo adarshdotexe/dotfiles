@@ -510,3 +510,10 @@ if (-r ~/.config/dotfiles-secrets/secrets.csh) source ~/.config/dotfiles-secrets
 if ($?ANTHROPIC_API_KEY) setenv OPENAI_API_KEY "$ANTHROPIC_API_KEY"
 setenv OPENAI_BASE_URL 'https://inference-api.nvidia.com/v1/'
 setenv OPENAI_MODEL 'openai/openai/gpt-5.5'
+
+# zoxide-as-cd: tcsh has no functions/chpwd, so shell out to ~/.local/bin/zcd-csh
+# (shipped by dotfiles) and feed the chosen path back to the builtin chdir.
+# Also tracks visited dirs so the frecency DB stays current.
+if ( -x ~/.local/bin/zcd-csh && { which zoxide >& /dev/null } ) then
+    alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
+endif

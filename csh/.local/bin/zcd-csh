@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# zcd-csh — resolve a csh `cd` argument via zoxide.
+#
+# Used by the dotfiles cd alias in .cshrc (tcsh has no functions or chpwd
+# hooks, so we shell out for the smart-cd logic):
+#
+#   alias cd 'chdir "`zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
+#
+# Behavior matches `zoxide init --cmd cd` for the common cases:
+#   no arg          -> $HOME
+#   - or ~          -> passed through to chdir
+#   existing path   -> passed through
+#   anything else   -> zoxide query (falls back to the literal arg)
+set -u
+arg="${1-}"
+case "$arg" in
+  "")        printf '%s\n' "$HOME" ;;
+  "-"|"~")   printf '%s\n' "$arg" ;;
+  /*|./*|../*) printf '%s\n' "$arg" ;;
+  *)
+    if [ -d "$arg" ]; then
+      printf '%s\n' "$arg"
+    else
+      zoxide query --exclude "$PWD" -- "$arg" 2>/dev/null || printf '%s\n' "$arg"
+    fi
+    ;;
+esac

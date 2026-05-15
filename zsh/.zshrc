@@ -291,7 +291,7 @@ fi
 # -----------------------------------------------------------------------------
 # 17. Tool activations (guarded; quiet if tool missing)
 # -----------------------------------------------------------------------------
-command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
 command -v mise   >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # sesh completion — regenerate when binary is newer than the cached file.
