@@ -58,7 +58,13 @@ command -v tmux >/dev/null || { echo "tt-launch: tmux not on PATH" >&2; exit 3; 
 # 2-tier attach ladder:
 #   1. sesh connect — handles existing-tmux (prefix match) AND zoxide-path create
 #   2. fallback: tmux new-session -As — for genuinely-new sessions sesh doesn't know
+#
+# Do NOT `exec sesh ... || true` — exec replaces the shell, so the fallback is
+# unreachable when sesh exits non-zero. Run sesh, exit on success, otherwise
+# fall through.
 if command -v sesh >/dev/null 2>&1; then
-  exec sesh connect "$SESSION" || true
+  if sesh connect "$SESSION"; then
+    exit 0
+  fi
 fi
 exec tmux new-session -As "$SESSION"
