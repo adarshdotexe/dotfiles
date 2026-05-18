@@ -1,13 +1,14 @@
 # ~/.config/starship.toml — managed by dotfiles. Shared by zsh, bash, tcsh,
 # PowerShell, and cmd (via Clink). Closely mimics the powerlevel10k rainbow-
-# style two-line prompt with the same segment layout and color choices.
+# style two-line prompt with the same segment layout, color choices, and
+# nerd-font glyphs (requires a Nerd Font in the terminal — MesloLGS NF here).
 #
 # Layout:
-#   ╭─  ~/repos/dotfiles  on  main ±───── ✘ 1  ⏱ 1.4s  user@host  13:42
+#   ╭─    ~/repos/dotfiles  on  main ±        ✘ 1  ⏱ 1.4s    ubuntu@vilje    13:42:08
 #   ╰─zsh ❯
 
 format = """\
-[╭─](#8a8a8a)$os $directory$git_branch$git_status$python$nodejs$kubernetes$terraform$aws$direnv$fill$status$cmd_duration$jobs$username$hostname$time
+[╭─](#8a8a8a)$os $directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell$fill$status$cmd_duration$jobs$username$hostname$time
 [╰─](#8a8a8a)$shell$character"""
 
 add_newline = false
@@ -17,15 +18,56 @@ add_newline = false
 symbol = " "
 style = "fg:#444444"
 
-# OS identifier glyph at the very start of line 1.
+# OS identifier glyph at the very start of line 1 — nerd-font OS icon.
 [os]
 disabled = false
 format = "[$symbol]($style)"
 style = "bold #ffffff"
 
-# Current working directory.
+[os.symbols]
+Alpaquita = " "
+Alpine = " "
+Amazon = " "
+Android = " "
+Arch = " "
+Artix = " "
+CentOS = " "
+Debian = " "
+DragonFly = " "
+Emscripten = " "
+EndeavourOS = " "
+Fedora = " "
+FreeBSD = " "
+Garuda = "󰛓 "
+Gentoo = " "
+HardenedBSD = "󰞌 "
+Illumos = "󰈸 "
+Linux = " "
+Mabox = " "
+Macos = " "
+Manjaro = " "
+Mariner = " "
+MidnightBSD = " "
+Mint = " "
+NetBSD = " "
+NixOS = " "
+OpenBSD = "󰈺 "
+openSUSE = " "
+OracleLinux = "󰌷 "
+Pop = " "
+Raspbian = " "
+Redhat = " "
+RedHatEnterprise = " "
+Redox = "󰀘 "
+Solus = "󰠳 "
+SUSE = " "
+Ubuntu = " "
+Unknown = " "
+Windows = "󰍲 "
+
+# Current working directory with a folder glyph.
 [directory]
-format = "[$path]($style) "
+format = "[ $path]($style) "
 style = "bold fg:#0087af"
 truncation_length = 4
 truncation_symbol = "…/"
@@ -33,68 +75,108 @@ read_only = "  "
 read_only_style = "fg:#ff5f00"
 home_symbol = "~"
 
+[directory.substitutions]
+"/home/scratch.advarshney_gpu" = "scratch"
+
 # Git branch.
 [git_branch]
-format = "on [ $branch ]($style)"
+symbol = " "
+format = "on [$symbol$branch ]($style)"
 style = "bold fg:#5fd700"
 
-# Git working-tree status (dirty, staged, etc.). p10k merges these into one
-# rainbow-bg segment; starship splits but the modifiers shown are the same.
+# Git working-tree status (dirty, staged, etc.).
 [git_status]
 format = "[$all_status$ahead_behind]($style)"
 style = "bold fg:#ff0000"
-modified = "±"
-staged = "+"
-deleted = "✘"
-untracked = "?"
-renamed = "»"
+modified = "± "
+staged = "+ "
+deleted = "✘ "
+untracked = "? "
+renamed = "» "
 ahead = "⇡${count}"
 behind = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-stashed = "*${count}"
-conflicted = "!"
+stashed = "* "
+conflicted = "! "
 
-# Python virtualenv segment (p10k: virtualenv/anaconda/pyenv).
+# Languages — shown only when their detect_files / detect_extensions match.
 [python]
-format = '[ $virtualenv]($style) '
+symbol = " "
+format = '[$symbol$pyenv_prefix($version )(\($virtualenv\) )]($style) '
 style = "bold fg:#5fafff"
 
-# Node version when in a node project (p10k: nodenv/nvm/nodeenv).
 [nodejs]
-format = '[ $version]($style) '
-style = "bold fg:#5fafff"
+symbol = " "
+format = '[$symbol($version) ]($style) '
+style = "bold fg:#5fd700"
 
-# Kubernetes context (p10k: kubecontext).
+[golang]
+symbol = " "
+format = '[$symbol($version) ]($style) '
+style = "bold fg:#00d7d7"
+
+[rust]
+symbol = " "
+format = '[$symbol($version) ]($style) '
+style = "bold fg:#ff5f00"
+
+[java]
+symbol = " "
+format = '[$symbol($version) ]($style) '
+style = "bold fg:#ff5f00"
+
+[docker_context]
+symbol = " "
+format = '[$symbol$context ]($style) '
+style = "bold fg:#005fff"
+
 [kubernetes]
 disabled = false
-format = '[󱃾 $context\($namespace\)]($style) '
+symbol = "󱃾 "
+format = '[$symbol$context\($namespace\) ]($style) '
 style = "fg:#5fafff"
 
-# Terraform workspace.
 [terraform]
-format = '[ $workspace]($style) '
+symbol = "󱁢 "
+format = '[$symbol$workspace ]($style) '
 style = "fg:#af87ff"
 
-# AWS profile.
 [aws]
-format = '[ $profile]($style) '
+symbol = " "
+format = '[$symbol$profile(\($region\)) ]($style) '
 style = "fg:#ffaf00"
 
-# direnv state.
+[gcloud]
+symbol = "󱇶 "
+format = '[$symbol$account\($project\) ]($style) '
+style = "fg:#0087ff"
+
+[azure]
+symbol = " "
+format = '[$symbol$subscription ]($style) '
+style = "fg:#0087ff"
+
 [direnv]
 disabled = false
-format = '[ $loaded $allowed]($style) '
+symbol = " "
+format = '[$symbol$loaded$allowed ]($style) '
 style = "fg:#ffaf00"
+
+[nix_shell]
+symbol = " "
+format = '[$symbol$state\($name\) ]($style) '
+style = "fg:#5fafff"
 
 # ── Right side ──────────────────────────────────────────────────────────────
 
-# Exit code of the previous command (shown only on failure, p10k red badge).
+# Exit code of the previous command (shown only on failure).
 [status]
 disabled = false
-format = "[✘ $status]($style) "
+symbol = "✘ "
+format = "[$symbol$status]($style) "
 style = "bold fg:#ff0000"
 
-# Command duration when ≥ 500ms (matches p10k command_execution_time).
+# Command duration when ≥ 500ms.
 [cmd_duration]
 min_time = 500
 format = "[⏱ $duration]($style) "
@@ -102,32 +184,33 @@ style = "bold fg:#ffaf00"
 
 # Background jobs indicator.
 [jobs]
-format = "[⚙ $number]($style) "
+symbol = "⚙ "
+format = "[$symbol$number]($style) "
 style = "bold fg:#ffaf00"
 number_threshold = 1
 
-# user@host context (p10k: context segment, far right of line 1).
+# user@host context (matches p10k's far-right context).
 [username]
 show_always = true
-format = "[$user]($style)"
+format = "[ $user]($style)"
 style_user = "bold fg:#5fd75f"
 style_root = "bold fg:#ff0000"
 
 [hostname]
 ssh_only = false
-format = "@[$hostname]($style) "
+format = "@[$hostname ]($style)"
 style = "bold fg:#5fd75f"
 
-# Current time (p10k's time segment, last on line 1).
+# Current time on a teal pill at the far right.
 [time]
 disabled = false
-format = "[ $time ]($style)"
+format = "[  $time ]($style)"
 style = "bold fg:#ffffff bg:#005f5f"
 time_format = "%H:%M:%S"
 
 # ── Line 2 ──────────────────────────────────────────────────────────────────
 
-# Shell name as a sigil before the prompt char so you always know what you're in.
+# Shell name as a sigil before the prompt char.
 [shell]
 disabled = false
 format = "[$indicator]($style) "
@@ -141,8 +224,7 @@ cmd_indicator = "cmd"
 nu_indicator = "nu"
 unknown_indicator = "sh"
 
-# Prompt char — green when last command succeeded, red on failure. Matches
-# p10k's PROMPT_CHAR_{OK,ERROR}_VIINS colors (76/196).
+# Prompt char — green when last command succeeded, red on failure.
 [character]
 success_symbol = "[❯](bold fg:#5fd700)"
 error_symbol = "[❯](bold fg:#ff0000)"
