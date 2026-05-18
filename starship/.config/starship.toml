@@ -164,21 +164,18 @@ style = "bg:#AF8700 fg:#FFFFFF bold"
 number_threshold = 1
 
 [username]
-show_always = true
-format = "[\ue0b2](fg:#3A3A3A bg:prev_bg)[ \uf007 $user ]($style)"
-style_user = "bg:#3A3A3A fg:#FFFFFF bold"
-style_root = "bg:#3A3A3A fg:#FF0000 bold"
+disabled = true
 
 [hostname]
 ssh_only = false
-format = "[@$hostname ]($style)"
+format = "[\ue0b2](fg:#3A3A3A bg:prev_bg)[ $hostname ]($style)"
 style = "bg:#3A3A3A fg:#FFFFFF bold"
 
 [time]
 disabled = false
 format = "[\ue0b2](fg:#005F5F bg:prev_bg)[ \uf017 $time ]($style)"
 style = "bg:#005F5F fg:#FFFFFF bold"
-time_format = "%I:%M:%S %p"
+time_format = "%I:%M %p"
 
 [shell]
 disabled = false
