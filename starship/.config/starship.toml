@@ -171,7 +171,7 @@ style_root = "bg:#3A3A3A fg:#FF0000 bold"
 
 [hostname]
 ssh_only = false
-format = "@[$hostname ]($style)"
+format = "[@$hostname ]($style)"
 style = "bg:#3A3A3A fg:#FFFFFF bold"
 
 [time]
