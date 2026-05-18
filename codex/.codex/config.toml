@@ -11,9 +11,10 @@ model_provider = "nvidia"
 model_reasoning_effort = "high"
 service_tier = "fast"
 
-# Skip approval prompts. Sandbox stays at codex's default (workspace-write),
-# so writes are still confined to the current working directory.
+# YOLO mode by default: never prompt for approval, no sandbox restrictions.
+# Equivalent to invoking `codex --yolo` on every launch.
 approval_policy = "never"
+sandbox_mode = "danger-full-access"
 
 [features]
 fast_mode = true
