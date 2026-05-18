@@ -517,3 +517,9 @@ setenv OPENAI_MODEL 'openai/openai/gpt-5.5'
 if ( -x ~/.local/bin/zcd-csh && { which zoxide >& /dev/null } ) then
     alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
 endif
+
+# Starship prompt — gives tcsh the same prompt info (cwd, git, status) shown
+# by bash starship and zsh p10k. Only works in tcsh, not bare csh.
+if ( $?tcsh && -x ~/.local/bin/starship ) then
+    eval "`~/.local/bin/starship init tcsh`"
+endif

@@ -304,10 +304,10 @@ wire_bash_secrets() {
       perl -i -ne 'print unless /^# dotfiles: bash environment v\d+ BEGIN/ .. /^# dotfiles: bash environment v\d+ END/' "$rc"
       perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
     fi
-    log "Adding bash env block (v5) to $rc"
+    log "Adding bash env block (v6) to $rc"
     cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v5 BEGIN
+# dotfiles: bash environment v6 BEGIN
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -330,7 +330,10 @@ export CLAUDE_CODE_NO_FLICKER=1
 export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
 export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}"
 export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
-# dotfiles: bash environment v5 END
+# Starship prompt — same look as csh's tcsh init; gives bash a prompt that
+# carries the same info as p10k (cwd, git, status). Skipped if not present.
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
+# dotfiles: bash environment v6 END
 SNIPPET
   done
 }
@@ -457,6 +460,12 @@ if ! has sesh; then
     warn "sesh install failed; grab the binary from https://github.com/joshmedeski/sesh/releases"
   fi
   rm -rf "$tmp"
+fi
+if ! has starship; then
+  log "Installing starship"
+  curl -fsSL https://starship.rs/install.sh \
+    | sh -s -- --bin-dir "$LOCAL_BIN" --yes >/dev/null 2>&1 \
+    || warn "starship install failed; bash/tcsh fall back to default prompt"
 fi
 
 # Stage 3a: EternalTerminal + tt helpers.
