@@ -3,7 +3,7 @@
 # Codepoints: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 
-format = """[\u256d\u2500](fg:#8a8a8a)[\ue0b0](fg:#3465A4)[ $os](bg:#3465A4 fg:#FFFFFF)$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)$fill$status$cmd_duration$jobs$username$hostname$time[\ue0b0](fg:#005F5F)
+format = """[\u256d\u2500](fg:#8a8a8a)[ $os ](bg:#3465A4 fg:#FFFFFF)$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)$fill$status$cmd_duration$jobs$username$hostname$time[\ue0b0](fg:#005F5F)
 [\u2570\u2500](fg:#8a8a8a)$shell$character"""
 
 add_newline = false
