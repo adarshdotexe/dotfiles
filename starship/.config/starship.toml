@@ -8,7 +8,7 @@
 
 format = """\
 [╭─](fg:#8a8a8a) \
-[](fg:#3465A4)\
+[](fg:#3465A4)\
 [ $os  ](bg:#3465A4 fg:#FFFFFF)\
 [](fg:#3465A4 bg:#0087AF)\
 $directory\
