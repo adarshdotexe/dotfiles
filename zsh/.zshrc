@@ -296,20 +296,21 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 # Collapse past prompts to just $character on Enter. Uses the [profiles]
 # transient profile defined in starship.toml.
 if [[ -n "${ZSH_VERSION-}" ]] && command -v starship >/dev/null 2>&1; then
+  # Replace `starship prompt` with `starship prompt --profile transient` in
+  # PROMPT only. RPROMPT uses `--right` which is mutually exclusive with
+  # --profile, so we just clear it in the transient state.
   TRANSIENT_PROMPT="${PROMPT// prompt / prompt --profile transient }"
-  TRANSIENT_RPROMPT="${RPROMPT// prompt / prompt --profile transient }"
   autoload -Uz add-zsh-hook add-zle-hook-widget
 
   _starship_transient_save() {
     SAVED_TRANSIENT_PROMPT="$(eval "printf '%s' \"${TRANSIENT_PROMPT}\"")"
-    SAVED_TRANSIENT_RPROMPT="$(eval "printf '%s' \"${TRANSIENT_RPROMPT}\"")"
     TRAPINT() { _starship_transient_apply; return $(( 128 + $1 )) }
   }
   add-zsh-hook precmd _starship_transient_save
 
   _starship_transient_apply() {
     PROMPT="$SAVED_TRANSIENT_PROMPT"
-    RPROMPT="$SAVED_TRANSIENT_RPROMPT"
+    RPROMPT=""
     zle .reset-prompt
   }
   add-zle-hook-widget zle-line-finish _starship_transient_apply

@@ -1,9 +1,10 @@
-# ~/.config/starship.toml -- managed by dotfiles.
-# Continuous-flow powerline. Shared by zsh, bash, tcsh, PowerShell, and cmd.
+# ~/.config/starship-tcsh.toml -- derived from starship.toml.
+# tcsh prompt-width calculation breaks on $fill + multi-line + ANSI escapes,
+# so this slim variant drops $fill and the right chain.
 # Codepoints: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 
-format = """[\u256d\u2500](fg:#8a8a8a)[ $os ](bg:#3465A4 fg:#FFFFFF)$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)$fill$status$cmd_duration$jobs$username$hostname$time[\ue0b0](fg:#005F5F)
+format = """[\u256d\u2500](fg:#8a8a8a)[ $os ](bg:#3465A4 fg:#FFFFFF)$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)
 [\u2570\u2500](fg:#8a8a8a)$shell$character"""
 
 add_newline = false
@@ -19,7 +20,7 @@ style = "fg:#444444"
 # OS pill (always first; leading arrow lives in the main format above)
 [os]
 disabled = false
-format = "[$symbol]($style)"
+format = "[$symbol ]($style)"
 style = "bg:#3465A4 fg:#FFFFFF"
 
 [os.symbols]
@@ -81,7 +82,7 @@ conflicted  = "! "
 # so adjacent languages render as one continuous pill.
 [python]
 symbol = "\ue73c"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $pyenv_prefix(\\($virtualenv\\) )($version) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $pyenv_prefix($version )(\\($virtualenv\\) ) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [nodejs]

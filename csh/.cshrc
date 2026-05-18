@@ -527,8 +527,15 @@ if ( -x ~/.local/bin/zcd-csh && { which zoxide >& /dev/null } ) then
     alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
 endif
 
-# Starship prompt — same starship.toml config as zsh/bash, so all three
-# terminals render the same two-line prompt.
+# Starship prompt — tcsh uses a slim variant (starship-tcsh.toml) because
+# tcsh's prompt-width counting breaks on $fill + multi-line + ANSI escapes
+# (it counts escape bytes as visible width, so fill pads beyond the real
+# width and content wraps mid-character).
+# We use `env` inline so STARSHIP_CONFIG is set only for the starship
+# invocation, not as a persistent env var that would leak into bash/zsh subshells.
 if ( $?tcsh && -x ~/.local/bin/starship ) then
     eval "`~/.local/bin/starship init tcsh`"
+    if ( -r ~/.config/starship-tcsh.toml ) then
+        alias precmd 'set prompt=`env STARSHIP_CONFIG=$HOME/.config/starship-tcsh.toml ~/.local/bin/starship prompt --status=$status`'
+    endif
 endif
