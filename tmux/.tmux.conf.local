@@ -206,7 +206,7 @@ tmux_conf_theme_window_status_bg="$tmux_conf_theme_colour_1"
 tmux_conf_theme_window_status_attr="none"
 #tmux_conf_theme_window_status_format="#I #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
 #tmux_conf_theme_window_status_format="#{circled_window_index} #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
-tmux_conf_theme_window_status_format="  #I  #W  "
+tmux_conf_theme_window_status_format=" #W "
 
 # window current status style
 #   - built-in variables are:
@@ -223,7 +223,7 @@ tmux_conf_theme_window_status_current_bg="$tmux_conf_theme_colour_4"
 tmux_conf_theme_window_status_current_attr="bold"
 #tmux_conf_theme_window_status_current_format="#I #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
 #tmux_conf_theme_window_status_current_format="#{circled_window_index} #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
-tmux_conf_theme_window_status_current_format="#[fg=#5F8700,bg=default]#[fg=#000000,bg=#5F8700,bold] #I  #W #[fg=#5F8700,bg=default,nobold]"
+tmux_conf_theme_window_status_current_format="#[fg=#5F8700,bg=default]#[fg=#000000,bg=#5F8700,bold] #W #[fg=#5F8700,bg=default,nobold]"
 
 # window activity status style
 tmux_conf_theme_window_status_activity_fg="default"
