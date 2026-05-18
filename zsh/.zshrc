@@ -290,6 +290,18 @@ fi
 # 17. Tool activations (guarded; quiet if tool missing)
 # -----------------------------------------------------------------------------
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
+# dotfiles: starship tmux config switch v1 BEGIN
+# Inside tmux, use the slim starship config (tmux status bar carries the
+# hostname / time / load info, so the prompt doesn't repeat them).
+_starship_choose_config() {
+  if [[ -n "${TMUX:-}" ]]; then
+    export STARSHIP_CONFIG="$HOME/.config/starship-slim.toml"
+  else
+    unset STARSHIP_CONFIG
+  fi
+}
+_starship_choose_config
+# dotfiles: starship tmux config switch v1 END
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 
 # dotfiles: starship transient prompt v1 BEGIN

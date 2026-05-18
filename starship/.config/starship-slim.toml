@@ -1,6 +1,7 @@
-# ~/.config/starship-tcsh.toml -- derived from starship.toml.
-# tcsh prompt-width calculation breaks on $fill + multi-line + ANSI escapes,
-# so this slim variant drops $fill and the right chain.
+# ~/.config/starship-slim.toml -- managed by dotfiles.
+# Slim variant for use inside tmux (where the status bar carries hostname,
+# time, etc.) and for tcsh (whose prompt-width counting breaks on $fill
+# and multi-line + many ANSI escapes). Drops $fill and the right chain.
 # Codepoints: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 

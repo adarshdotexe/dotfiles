@@ -89,23 +89,23 @@ tmux_conf_24b_colour=true
 tmux_conf_theme=enabled
 
 # default theme
-tmux_conf_theme_colour_1="#000000"    # dark gray
-tmux_conf_theme_colour_2="#303030"    # gray
+tmux_conf_theme_colour_1="#1c1c1c"    # dark gray
+tmux_conf_theme_colour_2="#3A3A3A"    # gray
 tmux_conf_theme_colour_3="#8a8a8a"    # light gray
-tmux_conf_theme_colour_4="#00afff"    # light blue
-tmux_conf_theme_colour_5="#ffff00"    # yellow
-tmux_conf_theme_colour_6="#000000"    # dark gray
-tmux_conf_theme_colour_7="#e4e4e4"    # white
-tmux_conf_theme_colour_8="#000000"    # dark gray
-tmux_conf_theme_colour_9="#ffff00"    # yellow
-tmux_conf_theme_colour_10="#ff00af"   # pink
-tmux_conf_theme_colour_11="#5fff00"   # green
+tmux_conf_theme_colour_4="#5F8700"    # light blue
+tmux_conf_theme_colour_5="#AF8700"    # yellow
+tmux_conf_theme_colour_6="#1c1c1c"    # dark gray
+tmux_conf_theme_colour_7="#FFFFFF"    # white
+tmux_conf_theme_colour_8="#1c1c1c"    # dark gray
+tmux_conf_theme_colour_9="#FFFFFF"    # yellow
+tmux_conf_theme_colour_10="#AF0000"   # pink
+tmux_conf_theme_colour_11="#5fd700"   # green
 tmux_conf_theme_colour_12="#8a8a8a"   # light gray
-tmux_conf_theme_colour_13="#e4e4e4"   # white
-tmux_conf_theme_colour_14="#000000"   # dark gray
-tmux_conf_theme_colour_15="#000000"   # dark gray
-tmux_conf_theme_colour_16="#008080"   # Teal
-tmux_conf_theme_colour_17="#e4e4e4"   # white
+tmux_conf_theme_colour_13="#FFFFFF"   # white
+tmux_conf_theme_colour_14="#3465A4"   # dark gray
+tmux_conf_theme_colour_15="#0087AF"   # dark gray
+tmux_conf_theme_colour_16="#005F5F"   # Teal
+tmux_conf_theme_colour_17="#FFFFFF"   # white
 
 # default theme (ansi)
 #tmux_conf_theme_colour_1="colour0"
@@ -206,7 +206,7 @@ tmux_conf_theme_window_status_bg="$tmux_conf_theme_colour_1"
 tmux_conf_theme_window_status_attr="none"
 #tmux_conf_theme_window_status_format="#I #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
 #tmux_conf_theme_window_status_format="#{circled_window_index} #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
-tmux_conf_theme_window_status_format="#I #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,🔔,}#{?window_zoomed_flag,🔍,}"
+tmux_conf_theme_window_status_format="  #I  #W  "
 
 # window current status style
 #   - built-in variables are:
@@ -223,7 +223,7 @@ tmux_conf_theme_window_status_current_bg="$tmux_conf_theme_colour_4"
 tmux_conf_theme_window_status_current_attr="bold"
 #tmux_conf_theme_window_status_current_format="#I #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
 #tmux_conf_theme_window_status_current_format="#{circled_window_index} #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,!,}#{?window_zoomed_flag,Z,}"
-tmux_conf_theme_window_status_current_format="#I #W#{?#{||:#{window_bell_flag},#{window_zoomed_flag}}, ,}#{?window_bell_flag,🔔,}#{?window_zoomed_flag,🔍,}"
+tmux_conf_theme_window_status_current_format="#[fg=#5F8700,bg=default]#[fg=#000000,bg=#5F8700,bold] #I  #W #[fg=#5F8700,bg=default,nobold]"
 
 # window activity status style
 tmux_conf_theme_window_status_activity_fg="default"
@@ -277,8 +277,8 @@ tmux_conf_theme_right_separator_sub="|"
 #     - #{uptime_s}
 #     - #{username}
 #     - #{username_ssh}
-tmux_conf_theme_status_left=">"
-tmux_conf_theme_status_right=" #{prefix}#{mouse}#{pairing}#{synchronized}, %I:%M %p , %d %b , #S ,"
+tmux_conf_theme_status_left=" #[fg=#FFFFFF,bg=#3465A4,bold] #S #[fg=#3465A4,bg=#0087AF,nobold]#[fg=#FFFFFF,bg=#0087AF,bold] #h #[fg=#0087AF,bg=default,nobold] "
+tmux_conf_theme_status_right=" #[fg=#AF8700,bg=default]#[fg=#FFFFFF,bg=#AF8700,bold]  #(awk '{print $1, $2, $3}' /proc/loadavg) #[fg=#005F5F,bg=#AF8700]#[fg=#FFFFFF,bg=#005F5F,bold]  %I:%M %p "
 
 # status left style
 tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_13"
@@ -525,3 +525,21 @@ tmux_conf_uninstall_plugins_on_reload=true
 # "$@"
 # # /!\ do not remove the previous line
 # #     do not write below this line
+
+# dotfiles: pastel-powerline overrides v1 BEGIN
+# Status bar at top (out of the way of starship's bottom-anchored prompt).
+set -g status-position top
+set -g status-interval 5
+set -g status-left-length 60
+set -g status-right-length 90
+
+# OSC 52 + agent socket propagation. Reattaching mosh-tmux refreshes panes
+# with the LIVE forwarded sockets instead of the dead originals.
+set -g set-clipboard on
+set -ga update-environment ' TT_HOST_ALIAS COLORTERM SSH_AUTH_SOCK SSH_AGENT_PID GPG_TTY DISPLAY'
+
+# Pane border status: each pane labeled with its current command and the
+# basename of its CWD. Lets you see WHAT is where without poking around.
+set -g pane-border-status top
+set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{b:pane_current_path} '
+# dotfiles: pastel-powerline overrides v1 END

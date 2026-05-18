@@ -304,10 +304,10 @@ wire_bash_secrets() {
       perl -i -ne 'print unless /^# dotfiles: bash environment v\d+ BEGIN/ .. /^# dotfiles: bash environment v\d+ END/' "$rc"
       perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
     fi
-    log "Adding bash env block (v7) to $rc"
+    log "Adding bash env block (v8) to $rc"
     cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v7 BEGIN
+# dotfiles: bash environment v8 BEGIN
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -337,9 +337,14 @@ export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}
 export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
 # Starship prompt — same look as csh's tcsh init; gives bash a prompt that
 # carries the same info as p10k (cwd, git, status). Skipped if not present.
+if [ -n "${TMUX-}" ]; then
+  export STARSHIP_CONFIG="$HOME/.config/starship-slim.toml"
+else
+  unset STARSHIP_CONFIG
+fi
 command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
 [ -n "${BLE_VERSION-}" ] && ble-attach 2>/dev/null
-# dotfiles: bash environment v7 END
+# dotfiles: bash environment v8 END
 SNIPPET
   done
 }
