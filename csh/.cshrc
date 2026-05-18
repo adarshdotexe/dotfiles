@@ -527,15 +527,14 @@ if ( -x ~/.local/bin/zcd-csh && { which zoxide >& /dev/null } ) then
     alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
 endif
 
-# Starship prompt — tcsh uses a slim variant (starship-slim.toml) because
-# tcsh's prompt-width counting breaks on $fill + multi-line + ANSI escapes
-# (it counts escape bytes as visible width, so fill pads beyond the real
-# width and content wraps mid-character).
-# We use `env` inline so STARSHIP_CONFIG is set only for the starship
-# invocation, not as a persistent env var that would leak into bash/zsh subshells.
+# Starship prompt — tcsh uses the slim config (tcsh's prompt-width counting
+# breaks on $fill + multi-line + ANSI escapes). Set STARSHIP_CONFIG before
+# starship init so its auto-generated precmd picks it up. Bash and zsh
+# subshells inherit STARSHIP_CONFIG but their own precmd hooks reset it
+# based on $TMUX, so the leak is corrected on the next prompt.
 if ( $?tcsh && -x ~/.local/bin/starship ) then
-    eval "`~/.local/bin/starship init tcsh`"
     if ( -r ~/.config/starship-slim.toml ) then
-        alias precmd 'set prompt=`env STARSHIP_CONFIG=$HOME/.config/starship-slim.toml ~/.local/bin/starship prompt --status=$status`'
+        setenv STARSHIP_CONFIG "$HOME/.config/starship-slim.toml"
     endif
+    eval "`~/.local/bin/starship init tcsh`"
 endif
