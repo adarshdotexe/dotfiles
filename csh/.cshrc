@@ -498,6 +498,8 @@ setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
 setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-6[1m]'
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
 setenv CLAUDE_CODE_NO_FLICKER 1
+# Advertise truecolor for TUI apps (codex grey input bar etc.).
+if (! $?COLORTERM) setenv COLORTERM truecolor
 
 # Headless xterm hosts have no browser; BROWSER=false prevents xdg-open
 # from launching anything (does not fix MSAL hang — see bootstrap.sh).

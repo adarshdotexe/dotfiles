@@ -320,6 +320,9 @@ export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.co
 export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
+# Advertise truecolor for TUI apps (codex grey input bar etc.) — WT supports
+# it, mosh 1.4+ preserves RGB escapes, but COLORTERM is often dropped over ssh.
+export COLORTERM="${COLORTERM:-truecolor}"
 # Headless xterm hosts (BAN/SC/UFLWPE — detected by per-user scratch mount)
 # have no browser; set BROWSER=false so xdg-open doesn't spawn a phantom
 # helper. Note: this does NOT force MSAL-based CLIs (fusion) to fall through

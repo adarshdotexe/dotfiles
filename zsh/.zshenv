@@ -26,6 +26,11 @@ export LESS="${LESS:--FRX}"
 export LANG="${LANG:-en_US.UTF-8}"
 export LC_ALL="${LC_ALL:-en_US.UTF-8}"
 
+# Advertise truecolor so TUI apps (codex, claude, vim, etc.) emit RGB escapes
+# instead of falling back to 256-color. Survives mosh/tmux as long as the
+# terminal really supports it (WT does).
+export COLORTERM="${COLORTERM:-truecolor}"
+
 export MISE_DATA_DIR="$HOME/.local/share/mise"
 
 # Anthropic / Claude Code config (non-secret URL/model). Set here in .zshenv so

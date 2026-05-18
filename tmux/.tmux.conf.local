@@ -69,7 +69,10 @@ tmux_conf_new_pane_reconnect_ssh=false
 # automatic detection relies on the COLORTERM environment variable being defined
 # to 'truecolor' or '24bit' or '$ tput colors' answering '16777216'
 # see https://github.com/termstandard/colors
-tmux_conf_24b_colour=auto
+# Forced ON: WT supports truecolor end-to-end (mosh 1.4+ preserves RGB
+# escapes), but COLORTERM doesn't always survive the ssh hop, so auto-detect
+# fails. Without this, codex's grey input bar renders as black in tmux.
+tmux_conf_24b_colour=true
 
 
 # -- theming -------------------------------------------------------------------
@@ -391,8 +394,9 @@ set -as terminal-features 'xterm*:extkeys'
 
 # Propagate TT_HOST_ALIAS from the attaching client into the session env so
 # #{E:TT_HOST_ALIAS} in set-titles-string finds it even when sesh attaches
-# to a pre-existing tmux server.
-set -ag update-environment ' TT_HOST_ALIAS'
+# to a pre-existing tmux server. Also push COLORTERM through so new panes
+# inherit truecolor advertisement (needed for codex's grey input area etc.).
+set -ag update-environment ' TT_HOST_ALIAS COLORTERM'
 
 
 # -- urlscan -------------------------------------------------------------------
