@@ -498,6 +498,13 @@ setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
 setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-6[1m]'
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
 setenv CLAUDE_CODE_NO_FLICKER 1
+# UTF-8 locale — tcsh 6.16+ is multibyte-aware but only if LANG/LC_ALL ARE
+# set. Without these, tcsh strips multibyte sequences (the "??" you see in
+# starship's nerd-font glyphs). zsh/bash already get this via .zshenv /
+# .bashrc-v6-block. ssh's SetEnv would set them too, but the remote sshd
+# doesn't always AcceptEnv them.
+if (! $?LANG) setenv LANG en_US.UTF-8
+if (! $?LC_ALL) setenv LC_ALL en_US.UTF-8
 # Advertise truecolor for TUI apps (codex grey input bar etc.).
 if (! $?COLORTERM) setenv COLORTERM truecolor
 

@@ -6,7 +6,7 @@
 
 format = """
 $username$hostname  $directory$git_branch$git_status$cmd_duration
-$character"""
+$shell$character"""
 
 add_newline = false
 
@@ -46,6 +46,19 @@ diverged = "⇕⇡${ahead_count}⇣${behind_count}"
 min_time = 500
 format = "  [⏱ $duration]($style)"
 style = "bold green"
+
+[shell]
+disabled = false
+format = "[$indicator]($style) "
+style = "bold dimmed white"
+bash_indicator = "bash"
+zsh_indicator = "zsh"
+fish_indicator = "fish"
+tcsh_indicator = "tcsh"
+powershell_indicator = "pwsh"
+cmd_indicator = "cmd"
+nu_indicator = "nu"
+unknown_indicator = "sh"
 
 [character]
 success_symbol = "[❯](bold green)"
