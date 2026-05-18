@@ -1,52 +1,133 @@
-# ~/.config/starship.toml — managed by dotfiles.
+# ~/.config/starship.toml — managed by dotfiles. Shared by zsh, bash, tcsh,
+# PowerShell, and cmd (via Clink). Closely mimics the powerlevel10k rainbow-
+# style two-line prompt with the same segment layout and color choices.
 #
-# Goal: ONE prompt rendered identically across zsh, bash, and tcsh. Replaces
-# powerlevel10k. Uses box-drawing characters (╭─ / ╰─) and a small set of
-# nerd-font icons that render in WT with a nerd font (MesloLGS NF etc.).
+# Layout:
+#   ╭─  ~/repos/dotfiles  on  main ±───── ✘ 1  ⏱ 1.4s  user@host  13:42
+#   ╰─zsh ❯
 
-format = """
-$username$hostname  $directory$git_branch$git_status$cmd_duration
-$shell$character"""
+format = """\
+[╭─](#8a8a8a)$os $directory$git_branch$git_status$python$nodejs$kubernetes$terraform$aws$direnv$fill$status$cmd_duration$jobs$username$hostname$time
+[╰─](#8a8a8a)$shell$character"""
 
 add_newline = false
 
-[username]
-show_always = true
-format = "[$user]($style)"
-style_user = "bold cyan"
-style_root = "bold red"
+# Filler between left segments and right segments (p10k's "first prompt gap").
+[fill]
+symbol = " "
+style = "fg:#444444"
 
-[hostname]
-ssh_only = false
-format = "@[$hostname]($style)"
-style = "bold cyan"
+# OS identifier glyph at the very start of line 1.
+[os]
+disabled = false
+format = "[$symbol]($style)"
+style = "bold #ffffff"
 
+# Current working directory.
 [directory]
-format = "  [$path]($style)"
-style = "bold blue"
+format = "[$path]($style) "
+style = "bold fg:#0087af"
 truncation_length = 4
 truncation_symbol = "…/"
+read_only = "  "
+read_only_style = "fg:#ff5f00"
+home_symbol = "~"
 
+# Git branch.
 [git_branch]
-format = "  [ $branch]($style)"
-style = "bold yellow"
+format = "on [ $branch ]($style)"
+style = "bold fg:#5fd700"
 
+# Git working-tree status (dirty, staged, etc.). p10k merges these into one
+# rainbow-bg segment; starship splits but the modifiers shown are the same.
 [git_status]
-format = " [$all_status$ahead_behind]($style)"
-style = "bold red"
+format = "[$all_status$ahead_behind]($style)"
+style = "bold fg:#ff0000"
 modified = "±"
 staged = "+"
 deleted = "✘"
 untracked = "?"
+renamed = "»"
 ahead = "⇡${count}"
 behind = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+stashed = "*${count}"
+conflicted = "!"
 
+# Python virtualenv segment (p10k: virtualenv/anaconda/pyenv).
+[python]
+format = '[ $virtualenv]($style) '
+style = "bold fg:#5fafff"
+
+# Node version when in a node project (p10k: nodenv/nvm/nodeenv).
+[nodejs]
+format = '[ $version]($style) '
+style = "bold fg:#5fafff"
+
+# Kubernetes context (p10k: kubecontext).
+[kubernetes]
+disabled = false
+format = '[󱃾 $context\($namespace\)]($style) '
+style = "fg:#5fafff"
+
+# Terraform workspace.
+[terraform]
+format = '[ $workspace]($style) '
+style = "fg:#af87ff"
+
+# AWS profile.
+[aws]
+format = '[ $profile]($style) '
+style = "fg:#ffaf00"
+
+# direnv state.
+[direnv]
+disabled = false
+format = '[ $loaded $allowed]($style) '
+style = "fg:#ffaf00"
+
+# ── Right side ──────────────────────────────────────────────────────────────
+
+# Exit code of the previous command (shown only on failure, p10k red badge).
+[status]
+disabled = false
+format = "[✘ $status]($style) "
+style = "bold fg:#ff0000"
+
+# Command duration when ≥ 500ms (matches p10k command_execution_time).
 [cmd_duration]
 min_time = 500
-format = "  [⏱ $duration]($style)"
-style = "bold green"
+format = "[⏱ $duration]($style) "
+style = "bold fg:#ffaf00"
 
+# Background jobs indicator.
+[jobs]
+format = "[⚙ $number]($style) "
+style = "bold fg:#ffaf00"
+number_threshold = 1
+
+# user@host context (p10k: context segment, far right of line 1).
+[username]
+show_always = true
+format = "[$user]($style)"
+style_user = "bold fg:#5fd75f"
+style_root = "bold fg:#ff0000"
+
+[hostname]
+ssh_only = false
+format = "@[$hostname]($style) "
+style = "bold fg:#5fd75f"
+
+# Current time (p10k's time segment, last on line 1).
+[time]
+disabled = false
+format = "[ $time ]($style)"
+style = "bold fg:#ffffff bg:#005f5f"
+time_format = "%H:%M:%S"
+
+# ── Line 2 ──────────────────────────────────────────────────────────────────
+
+# Shell name as a sigil before the prompt char so you always know what you're in.
 [shell]
 disabled = false
 format = "[$indicator]($style) "
@@ -60,7 +141,9 @@ cmd_indicator = "cmd"
 nu_indicator = "nu"
 unknown_indicator = "sh"
 
+# Prompt char — green when last command succeeded, red on failure. Matches
+# p10k's PROMPT_CHAR_{OK,ERROR}_VIINS colors (76/196).
 [character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[❯](bold red)"
-vimcmd_symbol = "[❮](bold yellow)"
+success_symbol = "[❯](bold fg:#5fd700)"
+error_symbol = "[❯](bold fg:#ff0000)"
+vimcmd_symbol = "[❮](bold fg:#ffff00)"
