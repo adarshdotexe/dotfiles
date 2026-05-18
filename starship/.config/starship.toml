@@ -9,7 +9,7 @@
 format = """\
 [╭─](fg:#8a8a8a) \
 [](fg:#3465A4)\
-[$os ](bg:#3465A4 fg:#FFFFFF)\
+[ $os  ](bg:#3465A4 fg:#FFFFFF)\
 [](fg:#3465A4 bg:#0087AF)\
 $directory\
 [](fg:#0087AF bg:#5F8700)\
@@ -212,7 +212,7 @@ style = "bg:#3A3A3A fg:#FFFFFF bold"
 disabled = false
 format = "[  $time ]($style)"
 style = "bg:#005F5F fg:#FFFFFF bold"
-time_format = "%H:%M:%S"
+time_format = "%I:%M:%S %p"
 
 # ── Line 2 ──────────────────────────────────────────────────────────────────
 [shell]
