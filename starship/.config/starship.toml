@@ -1,11 +1,11 @@
 # ~/.config/starship.toml — managed by dotfiles. Shared by zsh, bash, tcsh,
 # PowerShell, and cmd (via Clink). Closely mimics the powerlevel10k rainbow-
-# style two-line prompt with the same segment layout, color choices, and
-# nerd-font glyphs (requires a Nerd Font in the terminal — MesloLGS NF here).
+# style two-line prompt with nerd-font glyphs (requires MesloLGS NF or another
+# Nerd Font in the terminal).
 #
-# Layout:
-#   ╭─    ~/repos/dotfiles  on  main ±        ✘ 1  ⏱ 1.4s    ubuntu@vilje    13:42:08
-#   ╰─zsh ❯
+# All glyphs are written as \uXXXX TOML escapes so the file stays pure ASCII
+# on disk and the bytes can never be stripped by an editor / sync tool.
+# Codepoints reference: https://www.nerdfonts.com/cheat-sheet
 
 format = """\
 [╭─](#8a8a8a)$os $directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell$fill$status$cmd_duration$jobs$username$hostname$time
@@ -13,186 +13,163 @@ format = """\
 
 add_newline = false
 
-# Filler between left segments and right segments (p10k's "first prompt gap").
 [fill]
 symbol = " "
 style = "fg:#444444"
 
-# OS identifier glyph at the very start of line 1 — nerd-font OS icon.
+# ── OS identifier (nerd-font glyphs) ────────────────────────────────────────
 [os]
 disabled = false
 format = "[$symbol]($style)"
 style = "bold #ffffff"
 
 [os.symbols]
-Alpaquita = " "
-Alpine = " "
-Amazon = " "
-Android = " "
-Arch = " "
-Artix = " "
-CentOS = " "
-Debian = " "
-DragonFly = " "
-Emscripten = " "
-EndeavourOS = " "
-Fedora = " "
-FreeBSD = " "
-Garuda = "󰛓 "
-Gentoo = " "
-HardenedBSD = "󰞌 "
-Illumos = "󰈸 "
-Linux = " "
-Mabox = " "
-Macos = " "
-Manjaro = " "
-Mariner = " "
-MidnightBSD = " "
-Mint = " "
-NetBSD = " "
-NixOS = " "
-OpenBSD = "󰈺 "
-openSUSE = " "
-OracleLinux = "󰌷 "
-Pop = " "
-Raspbian = " "
-Redhat = " "
-RedHatEnterprise = " "
-Redox = "󰀘 "
-Solus = "󰠳 "
-SUSE = " "
-Ubuntu = " "
-Unknown = " "
-Windows = "󰍲 "
+Alpine        = " "  # nf-linux-alpine
+Amazon        = " "  # nf-fa-amazon
+Android       = " "  # nf-fa-android
+Arch          = " "  # nf-linux-archlinux
+CentOS        = " "  # nf-linux-centos
+Debian        = " "  # nf-linux-debian
+Fedora        = " "  # nf-linux-fedora
+FreeBSD       = " "  # nf-linux-freebsd
+Gentoo        = " "  # nf-linux-gentoo
+Linux         = " "  # nf-linux-tux
+Macos         = " "  # nf-linux-apple
+Manjaro       = " "  # nf-linux-manjaro
+Mint          = " "  # nf-linux-mint
+NixOS         = " "  # nf-linux-nixos
+openSUSE      = " "  # nf-linux-opensuse
+Pop           = " "  # nf-linux-pop_os
+Raspbian      = " "  # nf-linux-raspberry_pi
+Redhat        = " "  # nf-linux-redhat
+RedHatEnterprise = " "
+Ubuntu        = " "  # nf-linux-ubuntu
+Windows       = " "  # nf-fa-windows
+Unknown       = " "  # nf-fa-linux
 
-# Current working directory with a folder glyph.
+# ── Working directory ───────────────────────────────────────────────────────
 [directory]
-format = "[ $path]($style) "
+format = "[ $path]($style) "
 style = "bold fg:#0087af"
 truncation_length = 4
 truncation_symbol = "…/"
-read_only = "  "
+read_only = "  "                   # padlock
 read_only_style = "fg:#ff5f00"
 home_symbol = "~"
 
 [directory.substitutions]
 "/home/scratch.advarshney_gpu" = "scratch"
 
-# Git branch.
+# ── Git ─────────────────────────────────────────────────────────────────────
 [git_branch]
-symbol = " "
+symbol = " "                       # nf-fa-code_fork
 format = "on [$symbol$branch ]($style)"
 style = "bold fg:#5fd700"
 
-# Git working-tree status (dirty, staged, etc.).
 [git_status]
 format = "[$all_status$ahead_behind]($style)"
 style = "bold fg:#ff0000"
-modified = "± "
-staged = "+ "
-deleted = "✘ "
-untracked = "? "
-renamed = "» "
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-stashed = "* "
-conflicted = "! "
+modified    = "± "                  # ±
+staged      = "+ "
+deleted     = "✘ "                  # ✘
+untracked   = "? "
+renamed     = "» "                  # »
+ahead       = "⇡${count}"           # ⇡
+behind      = "⇣${count}"           # ⇣
+diverged    = "⇕⇡${ahead_count}⇣${behind_count}"
+stashed     = "* "
+conflicted  = "! "
 
-# Languages — shown only when their detect_files / detect_extensions match.
+# ── Languages ───────────────────────────────────────────────────────────────
 [python]
-symbol = " "
+symbol = " "                       # nf-dev-python
 format = '[$symbol$pyenv_prefix($version )(\($virtualenv\) )]($style) '
 style = "bold fg:#5fafff"
 
 [nodejs]
-symbol = " "
+symbol = " "                       # nf-dev-nodejs_small
 format = '[$symbol($version) ]($style) '
 style = "bold fg:#5fd700"
 
 [golang]
-symbol = " "
+symbol = " "                       # nf-dev-go
 format = '[$symbol($version) ]($style) '
 style = "bold fg:#00d7d7"
 
 [rust]
-symbol = " "
+symbol = " "                       # nf-dev-rust
 format = '[$symbol($version) ]($style) '
 style = "bold fg:#ff5f00"
 
 [java]
-symbol = " "
+symbol = " "                       # nf-dev-java
 format = '[$symbol($version) ]($style) '
 style = "bold fg:#ff5f00"
 
+# ── Cloud / orchestration ───────────────────────────────────────────────────
 [docker_context]
-symbol = " "
+symbol = " "                       # nf-linux-docker
 format = '[$symbol$context ]($style) '
 style = "bold fg:#005fff"
 
 [kubernetes]
 disabled = false
-symbol = "󱃾 "
+symbol = "☸ "                       # ☸ (BMP fallback; cleaner than k8s glyph)
 format = '[$symbol$context\($namespace\) ]($style) '
 style = "fg:#5fafff"
 
 [terraform]
-symbol = "󱁢 "
+symbol = " "                       # nf-fa-tree (terraform-like)
 format = '[$symbol$workspace ]($style) '
 style = "fg:#af87ff"
 
 [aws]
-symbol = " "
+symbol = " "                       # nf-fa-amazon
 format = '[$symbol$profile(\($region\)) ]($style) '
 style = "fg:#ffaf00"
 
 [gcloud]
-symbol = "󱇶 "
+symbol = "☁ "                       # ☁
 format = '[$symbol$account\($project\) ]($style) '
 style = "fg:#0087ff"
 
 [azure]
-symbol = " "
+symbol = "☁ "                       # ☁
 format = '[$symbol$subscription ]($style) '
 style = "fg:#0087ff"
 
 [direnv]
 disabled = false
-symbol = " "
+symbol = " "                       # nf-fa-cog
 format = '[$symbol$loaded$allowed ]($style) '
 style = "fg:#ffaf00"
 
 [nix_shell]
-symbol = " "
+symbol = " "                       # nf-linux-nixos
 format = '[$symbol$state\($name\) ]($style) '
 style = "fg:#5fafff"
 
 # ── Right side ──────────────────────────────────────────────────────────────
-
-# Exit code of the previous command (shown only on failure).
 [status]
 disabled = false
-symbol = "✘ "
+symbol = "✘ "                       # ✘
 format = "[$symbol$status]($style) "
 style = "bold fg:#ff0000"
 
-# Command duration when ≥ 500ms.
 [cmd_duration]
 min_time = 500
-format = "[⏱ $duration]($style) "
+format = "[⏱ $duration]($style) "   # ⏱
 style = "bold fg:#ffaf00"
 
-# Background jobs indicator.
 [jobs]
-symbol = "⚙ "
+symbol = " "                       # nf-fa-cog
 format = "[$symbol$number]($style) "
 style = "bold fg:#ffaf00"
 number_threshold = 1
 
-# user@host context (matches p10k's far-right context).
 [username]
 show_always = true
-format = "[ $user]($style)"
+format = "[ $user]($style)"        # nf-fa-user
 style_user = "bold fg:#5fd75f"
 style_root = "bold fg:#ff0000"
 
@@ -201,16 +178,13 @@ ssh_only = false
 format = "@[$hostname ]($style)"
 style = "bold fg:#5fd75f"
 
-# Current time on a teal pill at the far right.
 [time]
 disabled = false
-format = "[  $time ]($style)"
+format = "[  $time ]($style)"      # nf-fa-clock_o
 style = "bold fg:#ffffff bg:#005f5f"
 time_format = "%H:%M:%S"
 
 # ── Line 2 ──────────────────────────────────────────────────────────────────
-
-# Shell name as a sigil before the prompt char.
 [shell]
 disabled = false
 format = "[$indicator]($style) "
@@ -224,8 +198,7 @@ cmd_indicator = "cmd"
 nu_indicator = "nu"
 unknown_indicator = "sh"
 
-# Prompt char — green when last command succeeded, red on failure.
 [character]
-success_symbol = "[❯](bold fg:#5fd700)"
-error_symbol = "[❯](bold fg:#ff0000)"
-vimcmd_symbol = "[❮](bold fg:#ffff00)"
+success_symbol = "[❯](bold fg:#5fd700)"   # ❯
+error_symbol   = "[❯](bold fg:#ff0000)"
+vimcmd_symbol  = "[❮](bold fg:#ffff00)"   # ❮
