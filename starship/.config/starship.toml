@@ -126,12 +126,12 @@ format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $profile(\\($region\\))]($sty
 style = "bg:#5F87AF fg:#000000"
 
 [gcloud]
-symbol = "\u2601 "
+symbol = "\ue7b2 "
 format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $account\\($project\\)]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [azure]
-symbol = "\u2601 "
+symbol = "\uebd8 "
 format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $subscription]($style)"
 style = "bg:#5F87AF fg:#000000"
 
