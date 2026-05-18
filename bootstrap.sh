@@ -304,10 +304,10 @@ wire_bash_secrets() {
       perl -i -ne 'print unless /^# dotfiles: bash environment v\d+ BEGIN/ .. /^# dotfiles: bash environment v\d+ END/' "$rc"
       perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
     fi
-    log "Adding bash env block (v6) to $rc"
+    log "Adding bash env block (v7) to $rc"
     cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v6 BEGIN
+# dotfiles: bash environment v7 BEGIN
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -316,6 +316,8 @@ for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micro
 done
 unset _d
 export PATH
+[ -r "$HOME/.local/share/blesh/ble.sh" ] && \
+  source "$HOME/.local/share/blesh/ble.sh" --noattach 2>/dev/null
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
 export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
@@ -336,7 +338,8 @@ export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
 # Starship prompt — same look as csh's tcsh init; gives bash a prompt that
 # carries the same info as p10k (cwd, git, status). Skipped if not present.
 command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
-# dotfiles: bash environment v6 END
+[ -n "${BLE_VERSION-}" ] && ble-attach 2>/dev/null
+# dotfiles: bash environment v7 END
 SNIPPET
   done
 }
@@ -562,6 +565,10 @@ fi
 # Stage 8a: also make bash see ANTHROPIC_API_KEY etc.
 wire_bash_secrets
 
+# Stage 8b: install ble.sh + write ~/.blerc for bash transient prompt.
+install_blesh
+wire_blerc
+
 # Stage 8: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
 wire_claude_rule
 
@@ -570,6 +577,36 @@ if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
   log "mise install (pinned tools)"
   mise install 2>&1 | tail -3 || warn "mise install had problems; rerun later"
 fi
+
+
+# ------------------------------------------------------------------ ble.sh
+# Bash line editor that powers transient prompts (Starship docs:
+# https://starship.rs/advanced-config/). Requires bash 4.0+; xterm Rocky 8
+# and the Ubuntu hosts all ship 4.4+ so no version gate.
+install_blesh() {
+  if [[ -r "$HOME/.local/share/blesh/ble.sh" ]]; then
+    log "ble.sh already installed"
+    return 0
+  fi
+  log "Installing ble.sh (nightly tarball)"
+  mkdir -p "$HOME/.local/share"
+  curl -fsSL --connect-timeout 10 \
+    "https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz" \
+    | tar xJ -C "$HOME/.local/share/"
+  ln -sfn "$HOME/.local/share/ble-nightly" "$HOME/.local/share/blesh"
+}
+
+# Write ~/.blerc with starship transient prompt config (idempotent overwrite).
+wire_blerc() {
+  cat > "$HOME/.blerc" <<'BLERC'
+# Managed by dotfiles bootstrap.sh.
+# Collapse past prompts to just $character on Enter. `same-dir` keeps the
+# previous prompt visible after cd; `trim` drops multiline prompts to last line.
+bleopt prompt_ps1_transient=same-dir:trim
+bleopt prompt_ps1_final='$(starship module character)'
+BLERC
+  log "Wrote ~/.blerc"
+}
 
 # Stage 10: install Claude Code, OpenAI Codex, and Cursor (cursor-agent) CLIs.
 # Claude and Cursor use their official installers (drop binaries into ~/.local/bin).
