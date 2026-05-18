@@ -291,6 +291,30 @@ fi
 # -----------------------------------------------------------------------------
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
+
+# dotfiles: starship transient prompt v1 BEGIN
+# Collapse past prompts to just $character on Enter. Uses the [profiles]
+# transient profile defined in starship.toml.
+if [[ -n "${ZSH_VERSION-}" ]] && command -v starship >/dev/null 2>&1; then
+  TRANSIENT_PROMPT="${PROMPT// prompt / prompt --profile transient }"
+  TRANSIENT_RPROMPT="${RPROMPT// prompt / prompt --profile transient }"
+  autoload -Uz add-zsh-hook add-zle-hook-widget
+
+  _starship_transient_save() {
+    SAVED_TRANSIENT_PROMPT="$(eval "printf '%s' \"${TRANSIENT_PROMPT}\"")"
+    SAVED_TRANSIENT_RPROMPT="$(eval "printf '%s' \"${TRANSIENT_RPROMPT}\"")"
+    TRAPINT() { _starship_transient_apply; return $(( 128 + $1 )) }
+  }
+  add-zsh-hook precmd _starship_transient_save
+
+  _starship_transient_apply() {
+    PROMPT="$SAVED_TRANSIENT_PROMPT"
+    RPROMPT="$SAVED_TRANSIENT_RPROMPT"
+    zle .reset-prompt
+  }
+  add-zle-hook-widget zle-line-finish _starship_transient_apply
+fi
+# dotfiles: starship transient prompt v1 END
 command -v mise   >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # sesh completion — regenerate when binary is newer than the cached file.

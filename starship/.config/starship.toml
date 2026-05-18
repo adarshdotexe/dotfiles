@@ -1,171 +1,171 @@
-# ~/.config/starship.toml — managed by dotfiles. Shared by zsh, bash, tcsh,
-# PowerShell, and cmd (via Clink). Pastel-powerline aesthetic with nerd-font
-# glyphs. All non-ASCII bytes are written as \uXXXX TOML escapes so the file
-# stays pure ASCII on disk and the Write/sync chain can never strip them.
-#
-# Codepoints reference: https://www.nerdfonts.com/cheat-sheet
+# ~/.config/starship.toml -- managed by dotfiles.
+# Continuous-flow powerline. Shared by zsh, bash, tcsh, PowerShell, and cmd.
+# Codepoints: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 
-format = """[╭─](fg:#8a8a8a) [](fg:#3465A4)[ $os ](bg:#3465A4 fg:#FFFFFF)[](fg:#3465A4) [](fg:#0087AF)$directory[](fg:#0087AF) [](fg:#5F8700)$git_branch$git_status[](fg:#5F8700) [](fg:#5F87AF)$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[](fg:#5F87AF)$fill$status [](fg:#AF8700)$cmd_duration$jobs[](fg:#AF8700) [](fg:#3A3A3A)$username$hostname[](fg:#3A3A3A) [](fg:#005F5F)$time[](fg:#005F5F)
-[╰─](fg:#8a8a8a)$shell$character"""
+format = """[\u256d\u2500](fg:#8a8a8a)[\ue0b0](fg:#3465A4)[ $os ](bg:#3465A4 fg:#FFFFFF)$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)$fill$status$cmd_duration$jobs$username$hostname$time[\ue0b0](fg:#005F5F)
+[\u2570\u2500](fg:#8a8a8a)$shell$character"""
 
 add_newline = false
+
+# Transient prompt profile for the zsh zle-line-finish hook.
+[profiles]
+transient = "$character"
 
 [fill]
 symbol = " "
 style = "fg:#444444"
 
-# ── OS ──────────────────────────────────────────────────────────────────────
+# OS pill (always first; leading arrow lives in the main format above)
 [os]
 disabled = false
 format = "[$symbol]($style)"
 style = "bg:#3465A4 fg:#FFFFFF"
 
 [os.symbols]
-Alpine = ""
-Amazon = ""
-Android = ""
-Arch = ""
-CentOS = ""
-Debian = ""
-Fedora = ""
-FreeBSD = ""
-Gentoo = ""
-Linux = ""
-Macos = ""
-Manjaro = ""
-Mint = ""
-NixOS = ""
-openSUSE = ""
-Pop = ""
-Raspbian = ""
-Redhat = ""
-RedHatEnterprise = ""
-Ubuntu = ""
-Windows = ""
-Unknown = ""
+Alpine = "\uf300"
+Amazon = "\uf270"
+Android = "\uf17b"
+Arch = "\uf303"
+CentOS = "\uf304"
+Debian = "\uf306"
+Fedora = "\uf30a"
+FreeBSD = "\uf30c"
+Gentoo = "\uf30d"
+Linux = "\uf17c"
+Macos = "\uf179"
+Manjaro = "\uf312"
+Mint = "\uf30e"
+NixOS = "\uf313"
+openSUSE = "\uf314"
+Pop = "\uf32a"
+Raspbian = "\uf315"
+Redhat = "\uf316"
+RedHatEnterprise = "\uf316"
+Ubuntu = "\uf31b"
+Windows = "\uf17a"
+Unknown = "\uf17c"
 
-# ── Working directory ───────────────────────────────────────────────────────
 [directory]
-format = "[  $path ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#0087AF)[ \uf07c $path ]($style)"
 style = "bg:#0087AF fg:#FFFFFF bold"
 truncation_length = 4
-truncation_symbol = "…/"
-read_only = "  "
+truncation_symbol = "\u2026/"
+read_only = " \uf023 "
 read_only_style = "bg:#0087AF fg:#FF5F00"
 home_symbol = "~"
 
 [directory.substitutions]
 "/home/scratch.advarshney_gpu" = "scratch"
 
-# ── Git ─────────────────────────────────────────────────────────────────────
 [git_branch]
-symbol = " "
-format = "[ $symbol$branch ]($style)"
+symbol = "\uf126"
+format = "[\ue0b0](fg:prev_bg bg:#5F8700)[ $symbol $branch ]($style)"
 style = "bg:#5F8700 fg:#000000 bold"
 
 [git_status]
 format = "[$all_status$ahead_behind ]($style)"
 style = "bg:#5F8700 fg:#AA0000 bold"
-modified    = "± "
+modified    = "\u00b1 "
 staged      = "+ "
-deleted     = "✘ "
+deleted     = "\u2718 "
 untracked   = "? "
-renamed     = "» "
-ahead       = "⇡${count}"
-behind      = "⇣${count}"
-diverged    = "⇕⇡${ahead_count}⇣${behind_count}"
+renamed     = "\u00bb "
+ahead       = "\u21e1${count}"
+behind      = "\u21e3${count}"
+diverged    = "\u21d5\u21e1${ahead_count}\u21e3${behind_count}"
 stashed     = "* "
 conflicted  = "! "
 
-# ── Languages (all use the same blue background) ────────────────────────────
+# Languages: all share #5F87AF bg; same-color transitions are invisible
+# so adjacent languages render as one continuous pill.
 [python]
-symbol = " "
-format = '[ $symbol$pyenv_prefix($version )(\($virtualenv\) )]($style)'
+symbol = "\ue73c"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $pyenv_prefix($version )(\\($virtualenv\\) )]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [nodejs]
-symbol = " "
-format = '[ $symbol($version) ]($style)'
+symbol = "\ue718"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [golang]
-symbol = " "
-format = '[ $symbol($version) ]($style)'
+symbol = "\ue627"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [rust]
-symbol = " "
-format = '[ $symbol($version) ]($style)'
+symbol = "\ue7a8"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [java]
-symbol = " "
-format = '[ $symbol($version) ]($style)'
+symbol = "\ue738"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [docker_context]
-symbol = " "
-format = '[ $symbol$context ]($style)'
+symbol = "\uf308"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [kubernetes]
 disabled = false
-symbol = "☸ "
-format = '[ $symbol$context\($namespace\) ]($style)'
+symbol = "\u2638 "
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context\\($namespace\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [terraform]
-symbol = " "
-format = '[ $symbol$workspace ]($style)'
+symbol = "\uf1bb"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $workspace ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [aws]
-symbol = " "
-format = '[ $symbol$profile(\($region\)) ]($style)'
+symbol = "\uf270"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $profile(\\($region\\)) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [gcloud]
-symbol = "☁ "
-format = '[ $symbol$account\($project\) ]($style)'
+symbol = "\u2601 "
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $account\\($project\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [azure]
-symbol = "☁ "
-format = '[ $symbol$subscription ]($style)'
+symbol = "\u2601 "
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $subscription ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [direnv]
 disabled = false
-symbol = " "
-format = '[ $symbol$loaded$allowed ]($style)'
+symbol = "\uf013"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $loaded$allowed ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [nix_shell]
-symbol = " "
-format = '[ $symbol$state\($name\) ]($style)'
+symbol = "\uf313"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $state\\($name\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
-# ── Right side ──────────────────────────────────────────────────────────────
+# Right side: solo left-cap per segment (no cross-fill prev_bg).
 [status]
 disabled = false
-symbol = "✘ "
-format = "[](fg:#AF0000)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)[](fg:#AF0000)"
+symbol = "\u2718 "
+format = "[\ue0b2](fg:#AF0000)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)"
 
 [cmd_duration]
 min_time = 500
-format = "[  $duration ]($style)"
+format = "[\ue0b2](fg:#AF8700)[ \uf017 $duration ]($style)"
 style = "bg:#AF8700 fg:#FFFFFF bold"
 
 [jobs]
-symbol = " "
+symbol = "\uf013 "
 format = "[ $symbol$number ]($style)"
 style = "bg:#AF8700 fg:#FFFFFF bold"
 number_threshold = 1
 
 [username]
 show_always = true
-format = "[  $user]($style)"
+format = "[\ue0b2](fg:#3A3A3A)[ \uf007 $user]($style)"
 style_user = "bg:#3A3A3A fg:#FFFFFF bold"
 style_root = "bg:#3A3A3A fg:#FF0000 bold"
 
@@ -176,11 +176,10 @@ style = "bg:#3A3A3A fg:#FFFFFF bold"
 
 [time]
 disabled = false
-format = "[  $time ]($style)"
+format = "[\ue0b2](fg:#005F5F)[ \uf017 $time ]($style)"
 style = "bg:#005F5F fg:#FFFFFF bold"
 time_format = "%I:%M:%S %p"
 
-# ── Line 2 ──────────────────────────────────────────────────────────────────
 [shell]
 disabled = false
 format = "[$indicator ]($style)"
@@ -195,6 +194,6 @@ nu_indicator = "nu"
 unknown_indicator = "sh"
 
 [character]
-success_symbol = "[❯](bold fg:#5fd700)"
-error_symbol   = "[❯](bold fg:#ff0000)"
-vimcmd_symbol  = "[❮](bold fg:#ffff00)"
+success_symbol = "[\u276f](bold fg:#5fd700)"
+error_symbol   = "[\u276f](bold fg:#ff0000)"
+vimcmd_symbol  = "[\u276e](bold fg:#ffff00)"
