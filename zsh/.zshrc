@@ -296,11 +296,12 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 # Collapse past prompts to just $character on Enter. Uses the [profiles]
 # transient profile defined in starship.toml.
 if [[ -n "${ZSH_VERSION-}" ]] && command -v starship >/dev/null 2>&1; then
-  # Hardcoded transient PROMPT: green > on success, red > on error. The
-  # PROMPT// substitution approach was unreliable under tmux+mosh because
-  # starship`s zsh init does not always embed `starship prompt` literally
-  # in PROMPT.
-  autoload -Uz add-zle-hook-widget
+  # Capture starship's PROMPT template once. The template embeds $(starship
+  # prompt ...) which re-evaluates at every display, so restoring this
+  # template each precmd gives the full prompt back.
+  _starship_full_PROMPT="$PROMPT"
+  _starship_full_RPROMPT="$RPROMPT"
+  autoload -Uz add-zsh-hook add-zle-hook-widget
 
   _starship_transient_apply() {
     PROMPT='%F{green}%(?.%F{green}.%F{red})❯%f '
@@ -308,6 +309,12 @@ if [[ -n "${ZSH_VERSION-}" ]] && command -v starship >/dev/null 2>&1; then
     zle .reset-prompt
   }
   add-zle-hook-widget zle-line-finish _starship_transient_apply
+
+  _starship_transient_restore() {
+    PROMPT="$_starship_full_PROMPT"
+    RPROMPT="$_starship_full_RPROMPT"
+  }
+  add-zsh-hook precmd _starship_transient_restore
 fi
 # dotfiles: starship transient prompt v1 END
 command -v mise   >/dev/null 2>&1 && eval "$(mise activate zsh)"
