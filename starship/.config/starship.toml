@@ -6,41 +6,7 @@
 # Codepoints reference: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 
-format = """\
-[╭─](fg:#8a8a8a) \
-[](fg:#3465A4)\
-[ $os ](bg:#3465A4 fg:#FFFFFF)\
-[](fg:#3465A4 bg:#0087AF)\
-$directory\
-[](fg:#0087AF bg:#5F8700)\
-$git_branch\
-$git_status\
-[](fg:#5F8700 bg:#5F87AF)\
-$python\
-$nodejs\
-$golang\
-$rust\
-$java\
-$docker_context\
-$kubernetes\
-$terraform\
-$aws\
-$gcloud\
-$azure\
-$direnv\
-$nix_shell\
-[](fg:#5F87AF)\
-$fill\
-$status\
-[](fg:#AF8700)\
-$cmd_duration\
-$jobs\
-[](fg:#3A3A3A bg:#AF8700)\
-$username\
-$hostname\
-[](fg:#005F5F bg:#3A3A3A)\
-$time\
-[](fg:#005F5F)
+format = """[╭─](fg:#8a8a8a) [](fg:#3465A4)[ $os ](bg:#3465A4 fg:#FFFFFF)[](fg:#3465A4) [](fg:#0087AF)$directory[](fg:#0087AF) [](fg:#5F8700)$git_branch$git_status[](fg:#5F8700) [](fg:#5F87AF)$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[](fg:#5F87AF)$fill$status [](fg:#AF8700)$cmd_duration$jobs[](fg:#AF8700) [](fg:#3A3A3A)$username$hostname[](fg:#3A3A3A) [](fg:#005F5F)$time[](fg:#005F5F)
 [╰─](fg:#8a8a8a)$shell$character"""
 
 add_newline = false
@@ -184,7 +150,7 @@ style = "bg:#5F87AF fg:#000000"
 [status]
 disabled = false
 symbol = "✘ "
-format = "[](fg:#AF0000)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)[](fg:#AF0000)"
+format = "[](fg:#AF0000)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)[](fg:#AF0000)"
 
 [cmd_duration]
 min_time = 500
