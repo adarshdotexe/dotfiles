@@ -520,11 +520,8 @@ if ( -x ~/.local/bin/zcd-csh && { which zoxide >& /dev/null } ) then
     alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
 endif
 
-# Two-line prompt that matches the *information* shown by p10k (zsh) and
-# starship (bash): user@host, cwd, last-command exit, then the prompt char.
-# Pure tcsh sequences only — starship in tcsh leaks nerd-font glyphs that
-# render as "??" in the terminal because tcsh mis-tracks their width.
-if ( $?tcsh ) then
-    set prompt="%B%n@%m%b  %~  [exit %?]\\
-%# "
+# Starship prompt — same starship.toml config as zsh/bash, so all three
+# terminals render the same two-line prompt.
+if ( $?tcsh && -x ~/.local/bin/starship ) then
+    eval "`~/.local/bin/starship init tcsh`"
 endif

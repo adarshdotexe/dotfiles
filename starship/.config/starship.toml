@@ -1,0 +1,53 @@
+# ~/.config/starship.toml — managed by dotfiles.
+#
+# Goal: ONE prompt rendered identically across zsh, bash, and tcsh. Replaces
+# powerlevel10k. Uses box-drawing characters (╭─ / ╰─) and a small set of
+# nerd-font icons that render in WT with a nerd font (MesloLGS NF etc.).
+
+format = """
+$username$hostname  $directory$git_branch$git_status$cmd_duration
+$character"""
+
+add_newline = false
+
+[username]
+show_always = true
+format = "[$user]($style)"
+style_user = "bold cyan"
+style_root = "bold red"
+
+[hostname]
+ssh_only = false
+format = "@[$hostname]($style)"
+style = "bold cyan"
+
+[directory]
+format = "  [$path]($style)"
+style = "bold blue"
+truncation_length = 4
+truncation_symbol = "…/"
+
+[git_branch]
+format = "  [ $branch]($style)"
+style = "bold yellow"
+
+[git_status]
+format = " [$all_status$ahead_behind]($style)"
+style = "bold red"
+modified = "±"
+staged = "+"
+deleted = "✘"
+untracked = "?"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+
+[cmd_duration]
+min_time = 500
+format = "  [⏱ $duration]($style)"
+style = "bold green"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold yellow)"

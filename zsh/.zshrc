@@ -5,11 +5,10 @@
 # sourced at the bottom.
 
 # -----------------------------------------------------------------------------
-# 1. Powerlevel10k instant prompt (must stay near the top)
+# 1. Prompt: starship (replaces powerlevel10k). Configured via
+#    ~/.config/starship.toml (shipped by dotfiles). The actual init is at
+#    the bottom of this file so it runs last.
 # -----------------------------------------------------------------------------
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
 
 # -----------------------------------------------------------------------------
 # 2. Ultra-fast completion init (skip compaudit, reuse cached dump)
@@ -115,15 +114,15 @@ export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
 for f in "$HOME/.zsh/"*.zsh(N); do source "$f"; done
 
 # -----------------------------------------------------------------------------
-# 6. Oh My Zsh + Powerlevel10k
+# 6. Oh My Zsh (plugins only — prompt comes from starship below)
 # -----------------------------------------------------------------------------
 export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME="powerlevel10k/powerlevel10k"
+ZSH_THEME=""
 
 zstyle ":omz:update" mode auto
 zstyle ":omz:update" frequency 7
 
-# Weekly pull of custom OMZ plugins + p10k theme (silent, non-blocking)
+# Weekly pull of custom OMZ plugins (silent, non-blocking).
 _update_custom_plugins() {
   local marker="$ZSH/custom/.last_plugin_update"
   local now=$(date +%s) last=0
@@ -133,8 +132,6 @@ _update_custom_plugins() {
     for d in "$ZSH"/custom/plugins/*/; do
       [[ -d "$d/.git" ]] && (cd "$d" && git pull -q &) 2>/dev/null
     done
-    [[ -d "$ZSH/custom/themes/powerlevel10k/.git" ]] && \
-      (cd "$ZSH/custom/themes/powerlevel10k" && git pull -q &) 2>/dev/null
     wait
   fi
 }
@@ -256,7 +253,8 @@ npx() { unfunction nvm node npm npx 2>/dev/null; [ -s "$NVM_DIR/nvm.sh" ] && . "
 # -----------------------------------------------------------------------------
 # 14. Powerlevel10k user config
 # -----------------------------------------------------------------------------
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+# p10k config kept on disk for easy revert; not sourced anymore.
+# [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # -----------------------------------------------------------------------------
 # 15. Deferred plugin load (after first prompt = faster startup)
@@ -292,6 +290,7 @@ fi
 # 17. Tool activations (guarded; quiet if tool missing)
 # -----------------------------------------------------------------------------
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 command -v mise   >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # sesh completion — regenerate when binary is newer than the cached file.
