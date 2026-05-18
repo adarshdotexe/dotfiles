@@ -9,7 +9,7 @@
 format = """\
 [╭─](fg:#8a8a8a) \
 [](fg:#3465A4)\
-[ $os  ](bg:#3465A4 fg:#FFFFFF)\
+[ $os ](bg:#3465A4 fg:#FFFFFF)\
 [](fg:#3465A4 bg:#0087AF)\
 $directory\
 [](fg:#0087AF bg:#5F8700)\
@@ -56,28 +56,28 @@ format = "[$symbol]($style)"
 style = "bg:#3465A4 fg:#FFFFFF"
 
 [os.symbols]
-Alpine           = " "
-Amazon           = " "
-Android          = " "
-Arch             = " "
-CentOS           = " "
-Debian           = " "
-Fedora           = " "
-FreeBSD          = " "
-Gentoo           = " "
-Linux            = " "
-Macos            = " "
-Manjaro          = " "
-Mint             = " "
-NixOS            = " "
-openSUSE         = " "
-Pop              = " "
-Raspbian         = " "
-Redhat           = " "
-RedHatEnterprise = " "
-Ubuntu           = " "
-Windows          = " "
-Unknown          = " "
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = ""
+CentOS = ""
+Debian = ""
+Fedora = ""
+FreeBSD = ""
+Gentoo = ""
+Linux = ""
+Macos = ""
+Manjaro = ""
+Mint = ""
+NixOS = ""
+openSUSE = ""
+Pop = ""
+Raspbian = ""
+Redhat = ""
+RedHatEnterprise = ""
+Ubuntu = ""
+Windows = ""
+Unknown = ""
 
 # ── Working directory ───────────────────────────────────────────────────────
 [directory]
