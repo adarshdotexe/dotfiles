@@ -277,8 +277,8 @@ tmux_conf_theme_right_separator_sub="|"
 #     - #{uptime_s}
 #     - #{username}
 #     - #{username_ssh}
-tmux_conf_theme_status_left=" #[fg=#FFFFFF,bg=#3465A4,bold] #S #[fg=#3465A4,bg=#0087AF,nobold]#[fg=#FFFFFF,bg=#0087AF,bold] #h #[fg=#0087AF,bg=default,nobold] "
-tmux_conf_theme_status_right=" #[fg=#AF8700,bg=default]#[fg=#FFFFFF,bg=#AF8700,bold]  #(awk '{print $1, $2, $3}' /proc/loadavg) #[fg=#005F5F,bg=#AF8700]#[fg=#FFFFFF,bg=#005F5F,bold]  %I:%M %p "
+tmux_conf_theme_status_left=" #[fg=#FFFFFF,bg=#0087AF,bold] #(whoami)@#h #[fg=#0087AF,bg=default,nobold] "
+tmux_conf_theme_status_right=" #[fg=#005F5F,bg=default]#[fg=#FFFFFF,bg=#005F5F,bold]  %I:%M:%S %p "
 
 # status left style
 tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_13"
@@ -529,7 +529,7 @@ tmux_conf_uninstall_plugins_on_reload=true
 # dotfiles: pastel-powerline overrides v1 BEGIN
 # Status bar at top (out of the way of starship's bottom-anchored prompt).
 set -g status-position top
-set -g status-interval 5
+set -g status-interval 1
 set -g status-left-length 60
 set -g status-right-length 90
 
@@ -541,5 +541,5 @@ set -ga update-environment ' TT_HOST_ALIAS COLORTERM SSH_AUTH_SOCK SSH_AGENT_PID
 # Pane border status: each pane labeled with its current command and the
 # basename of its CWD. Lets you see WHAT is where without poking around.
 set -g pane-border-status top
-set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{b:pane_current_path} '
+set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{pane_current_path} '
 # dotfiles: pastel-powerline overrides v1 END

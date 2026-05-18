@@ -5,7 +5,7 @@
 # Codepoints: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 
-format = """[\u256d\u2500](fg:#8a8a8a)[ $os ](bg:#3465A4 fg:#FFFFFF)$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)
+format = """[\u256d\u2500](fg:#8a8a8a)[ $os ](bg:#3465A4 fg:#FFFFFF)$git_branch$git_status$status$fill$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell[\ue0b0](fg:prev_bg)
 [\u2570\u2500](fg:#8a8a8a)$shell$character"""
 
 add_newline = false
@@ -83,69 +83,69 @@ conflicted  = "! "
 # so adjacent languages render as one continuous pill.
 [python]
 symbol = "\ue73c"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $pyenv_prefix(\\($virtualenv\\) )($version) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $pyenv_prefix(\\($virtualenv\\) )($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [nodejs]
 symbol = "\ue718"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [golang]
 symbol = "\ue627"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [rust]
 symbol = "\ue7a8"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [java]
 symbol = "\ue738"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [docker_context]
 symbol = "\uf308"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $context ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [kubernetes]
 disabled = false
 symbol = "\u2638 "
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context\\($namespace\\) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $context\\($namespace\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [terraform]
 symbol = "\uf1bb"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $workspace ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $workspace ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [aws]
 symbol = "\uf270"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $profile(\\($region\\)) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $profile(\\($region\\)) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [gcloud]
 symbol = "\ue7f1 "
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $account\\($project\\) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $account\\($project\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [azure]
 symbol = "\uebd8 "
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $subscription ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $subscription ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [direnv]
 disabled = false
 symbol = "\uf013"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $loaded$allowed ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $loaded$allowed ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [nix_shell]
 symbol = "\uf313"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $state\\($name\\) ]($style)"
+format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $state\\($name\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 # Right side: solo left-cap per segment (no cross-fill prev_bg).
