@@ -344,6 +344,35 @@ SNIPPET
   done
 }
 
+# ------------------------------------------------------------------ ble.sh
+# Bash line editor that powers transient prompts (Starship docs:
+# https://starship.rs/advanced-config/). Requires bash 4.0+; xterm Rocky 8
+# and the Ubuntu hosts all ship 4.4+ so no version gate.
+install_blesh() {
+  if [[ -r "$HOME/.local/share/blesh/ble.sh" ]]; then
+    log "ble.sh already installed"
+    return 0
+  fi
+  log "Installing ble.sh (nightly tarball)"
+  mkdir -p "$HOME/.local/share"
+  curl -fsSL --connect-timeout 10 \
+    "https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz" \
+    | tar xJ -C "$HOME/.local/share/"
+  ln -sfn "$HOME/.local/share/ble-nightly" "$HOME/.local/share/blesh"
+}
+
+# Write ~/.blerc with starship transient prompt config (idempotent overwrite).
+wire_blerc() {
+  cat > "$HOME/.blerc" <<'BLERC'
+# Managed by dotfiles bootstrap.sh.
+# Collapse past prompts to just $character on Enter. `same-dir` keeps the
+# previous prompt visible after cd; `trim` drops multiline prompts to last line.
+bleopt prompt_ps1_transient=same-dir:trim
+bleopt prompt_ps1_final='$(starship module character)'
+BLERC
+  log "Wrote ~/.blerc"
+}
+
 # ------------------------------------------------------------------ scratch redirect
 # xterm hosts (BAN, SC, UFLWPE) cap $HOME at 5 GB. Move cache/.local/package-
 # manager dirs onto the per-user scratch mount and leave symlinks behind so
@@ -579,34 +608,6 @@ if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
 fi
 
 
-# ------------------------------------------------------------------ ble.sh
-# Bash line editor that powers transient prompts (Starship docs:
-# https://starship.rs/advanced-config/). Requires bash 4.0+; xterm Rocky 8
-# and the Ubuntu hosts all ship 4.4+ so no version gate.
-install_blesh() {
-  if [[ -r "$HOME/.local/share/blesh/ble.sh" ]]; then
-    log "ble.sh already installed"
-    return 0
-  fi
-  log "Installing ble.sh (nightly tarball)"
-  mkdir -p "$HOME/.local/share"
-  curl -fsSL --connect-timeout 10 \
-    "https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz" \
-    | tar xJ -C "$HOME/.local/share/"
-  ln -sfn "$HOME/.local/share/ble-nightly" "$HOME/.local/share/blesh"
-}
-
-# Write ~/.blerc with starship transient prompt config (idempotent overwrite).
-wire_blerc() {
-  cat > "$HOME/.blerc" <<'BLERC'
-# Managed by dotfiles bootstrap.sh.
-# Collapse past prompts to just $character on Enter. `same-dir` keeps the
-# previous prompt visible after cd; `trim` drops multiline prompts to last line.
-bleopt prompt_ps1_transient=same-dir:trim
-bleopt prompt_ps1_final='$(starship module character)'
-BLERC
-  log "Wrote ~/.blerc"
-}
 
 # Stage 10: install Claude Code, OpenAI Codex, and Cursor (cursor-agent) CLIs.
 # Claude and Cursor use their official installers (drop binaries into ~/.local/bin).
