@@ -64,7 +64,7 @@ format = "[\ue0b0](fg:prev_bg bg:#5F8700)[ $symbol $branch ]($style)"
 style = "bg:#5F8700 fg:#000000 bold"
 
 [git_status]
-format = "[$all_status$ahead_behind ]($style)"
+format = "[$all_status$ahead_behind]($style)"
 style = "bg:#5F8700 fg:#AA0000 bold"
 modified    = "\u00b1 "
 staged      = "+ "
@@ -159,7 +159,7 @@ style = "bg:#AF8700 fg:#FFFFFF bold"
 
 [jobs]
 symbol = "\uf013 "
-format = "[ $symbol$number ]($style)"
+format = "[$symbol$number]($style)"
 style = "bg:#AF8700 fg:#FFFFFF bold"
 number_threshold = 1
 
@@ -171,7 +171,7 @@ style_root = "bg:#3A3A3A fg:#FF0000 bold"
 
 [hostname]
 ssh_only = false
-format = "[@$hostname ]($style)"
+format = "[@$hostname]($style)"
 style = "bg:#3A3A3A fg:#FFFFFF bold"
 
 [time]
@@ -182,7 +182,7 @@ time_format = "%I:%M:%S %p"
 
 [shell]
 disabled = false
-format = "[$indicator ]($style)"
+format = "[$indicator]($style)"
 style = "fg:#8a8a8a"
 bash_indicator = "bash"
 zsh_indicator = "zsh"
