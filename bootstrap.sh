@@ -385,6 +385,35 @@ redirect_home_dirs() {
   done
 }
 
+# ------------------------------------------------------------------ pin tmux
+# We've been bitten by /usr/bin/tmux (system, often older) and a userland tmux
+# (e.g. /home/utils/tmux-3.5a) sharing the same socket — different protocol
+# versions on the same socket file kill each other. Symlink ONE tmux into
+# ~/.local/bin so the shell always picks the same binary, no matter who's
+# invoking it.
+#
+# Preference order:
+#   1. /home/utils/tmux-3.5a/bin/tmux  (NVIDIA xterm — newest)
+#   2. $MAMBA_ENV/bin/tmux             (userland micromamba — fallback for no-sudo)
+#   3. /usr/bin/tmux                   (system, on Ubuntu et al — fine when modern)
+pin_tmux() {
+  local target=""
+  if [[ -x /home/utils/tmux-3.5a/bin/tmux ]]; then
+    target=/home/utils/tmux-3.5a/bin/tmux
+  elif [[ -x "$MAMBA_ENV/bin/tmux" ]]; then
+    target="$MAMBA_ENV/bin/tmux"
+  elif [[ -x /usr/bin/tmux ]]; then
+    target=/usr/bin/tmux
+  else
+    warn "no tmux candidate found to pin in $LOCAL_BIN"
+    return 0
+  fi
+  if [[ "$(readlink -f "$LOCAL_BIN/tmux" 2>/dev/null)" != "$(readlink -f "$target")" ]]; then
+    log "Pinning tmux: $LOCAL_BIN/tmux -> $target"
+    ln -sfn "$target" "$LOCAL_BIN/tmux"
+  fi
+}
+
 # ------------------------------------------------------------------ claude rule
 wire_claude_rule() {
   local claude_md="$HOME/.claude/CLAUDE.md"
@@ -427,6 +456,10 @@ has bat        || MAMBA_NEED+=(bat)
 if (( ${#MAMBA_NEED[@]} > 0 )); then
   mamba_install "${MAMBA_NEED[@]}"
 fi
+
+# Stage 2a: pin a single tmux binary into ~/.local/bin to prevent the
+# 2.7-vs-3.5a socket-collision crash we've hit on the xterms.
+pin_tmux
 
 # Stage 3: single-binary userland tools.
 if ! has mise; then
