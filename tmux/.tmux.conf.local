@@ -542,5 +542,5 @@ set -ga update-environment ' TT_HOST_ALIAS COLORTERM SSH_AUTH_SOCK SSH_AGENT_PID
 # starship-rendered git + runtime context (via the tmux-info profile in
 # starship-slim.toml). One info row per pane.
 set -g pane-border-status top
-set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{pane_current_path} #($HOME/.local/bin/starship-to-tmux #{pane_current_path})'
+set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{pane_current_path} #[align=right]#($HOME/.local/bin/starship-to-tmux #{pane_current_path}) '
 # dotfiles: pastel-powerline overrides v1 END
