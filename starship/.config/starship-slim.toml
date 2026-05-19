@@ -64,7 +64,7 @@ home_symbol = "~"
 
 [git_branch]
 symbol = "\uf126"
-format = "[\ue0b0](fg:prev_bg bg:#5F8700)[ $symbol $branch ]($style)"
+format = "[\ue0b2](fg:#5F8700 bg:prev_bg)[ $symbol $branch ]($style)"
 style = "bg:#5F8700 fg:#000000 bold"
 
 [git_status]
