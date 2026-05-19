@@ -366,6 +366,59 @@ install_blesh() {
   ln -sfn "$HOME/.local/share/ble-nightly" "$HOME/.local/share/blesh"
 }
 
+
+# ------------------------------------------------------------------ starship->tmux bridge
+# Tmux's #() format substitution does NOT parse ANSI escapes. Starship
+# renders ANSI, so we drop a small Python wrapper that converts ANSI to
+# tmux's #[fg=...,bg=...] markup. Pane-border-format calls this wrapper
+# instead of starship directly.
+write_starship_to_tmux() {
+  cat > "$HOME/.local/bin/starship-to-tmux" <<'WRAPPER'
+#!/usr/bin/env python3
+"""Convert starship's ANSI output to tmux format-string syntax."""
+import os, re, subprocess, sys
+
+path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~")
+try:
+    out = subprocess.check_output(
+        [os.path.expanduser("~/.local/bin/starship"), "prompt", "--profile=tmux-info"],
+        cwd=path,
+        env={**os.environ,
+             "STARSHIP_CONFIG": os.path.expanduser("~/.config/starship-slim.toml"),
+             "STARSHIP_SHELL": "fish"},
+        text=True,
+        stderr=subprocess.DEVNULL,
+        timeout=2,
+    )
+except Exception:
+    sys.exit(0)
+
+def to_hex(parts):
+    return "#{:02x}{:02x}{:02x}".format(int(parts[0]), int(parts[1]), int(parts[2]))
+
+def convert(m):
+    parts = m.group(1).split(";")
+    out, i = [], 0
+    while i < len(parts):
+        p = parts[i] if parts[i] else "0"
+        if p == "38" and i + 4 < len(parts) and parts[i + 1] == "2":
+            out.append("fg=" + to_hex(parts[i + 2:i + 5])); i += 5
+        elif p == "48" and i + 4 < len(parts) and parts[i + 1] == "2":
+            out.append("bg=" + to_hex(parts[i + 2:i + 5])); i += 5
+        elif p == "0":
+            out.append("default"); i += 1
+        elif p == "1":
+            out.append("bold"); i += 1
+        else:
+            i += 1
+    return "#[" + ",".join(out) + "]" if out else ""
+
+print(re.sub(r"\x1b\[([0-9;]*)m", convert, out).rstrip(), end="")
+WRAPPER
+  chmod +x "$HOME/.local/bin/starship-to-tmux"
+  log "Wrote ~/.local/bin/starship-to-tmux"
+}
+
 # Write ~/.blerc with starship transient prompt config (idempotent overwrite).
 wire_blerc() {
   cat > "$HOME/.blerc" <<'BLERC'
@@ -602,6 +655,7 @@ wire_bash_secrets
 # Stage 8b: install ble.sh + write ~/.blerc for bash transient prompt.
 install_blesh
 wire_blerc
+write_starship_to_tmux
 
 # Stage 8: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
 wire_claude_rule
