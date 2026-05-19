@@ -14,7 +14,7 @@ add_newline = false
 # zle-line-finish hook for transient prompt collapse.
 [profiles]
 transient = "$character"
-tmux-info = "$git_branch$git_status $python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell"
+tmux-info = "$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell"
 
 [fill]
 symbol = " "
@@ -64,7 +64,7 @@ home_symbol = "~"
 
 [git_branch]
 symbol = "\uf126"
-format = "[\ue0b2](fg:#5F8700 bg:prev_bg)[ $symbol $branch ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F8700)[ $symbol $branch ]($style)"
 style = "bg:#5F8700 fg:#000000 bold"
 
 [git_status]
@@ -85,80 +85,80 @@ conflicted  = "! "
 # so adjacent languages render as one continuous pill.
 [python]
 symbol = "\ue73c"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $pyenv_prefix(\\($virtualenv\\) )($version) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $pyenv_prefix(\\($virtualenv\\) )($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [nodejs]
 symbol = "\ue718"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [golang]
 symbol = "\ue627"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [rust]
 symbol = "\ue7a8"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [java]
 symbol = "\ue738"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol ($version) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [docker_context]
 symbol = "\uf308"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $context ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context ]($style)"
 style = "bg:#5F87AF fg:#000000 bold"
 
 [kubernetes]
 disabled = false
 symbol = "\u2638 "
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $context\\($namespace\\) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context\\($namespace\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [terraform]
 symbol = "\uf1bb"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $workspace ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $workspace ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [aws]
 symbol = "\uf270"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $profile(\\($region\\)) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $profile(\\($region\\)) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [gcloud]
 symbol = "\ue7f1 "
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $account\\($project\\) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $account\\($project\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [azure]
 symbol = "\uebd8 "
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $subscription ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $subscription ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [direnv]
 disabled = false
 symbol = "\uf013"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $loaded$allowed ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $loaded$allowed ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 [nix_shell]
 symbol = "\uf313"
-format = "[\ue0b2](fg:#5F87AF bg:prev_bg)[ $symbol $state\\($name\\) ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $state\\($name\\) ]($style)"
 style = "bg:#5F87AF fg:#000000"
 
 # Right side: solo left-cap per segment (no cross-fill prev_bg).
 [status]
 disabled = false
 symbol = "\u2718 "
-format = "[\ue0b2](fg:#AF0000 bg:prev_bg)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)"
+format = "[\ue0b0](fg:prev_bg bg:#AF0000)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)"
 
 [cmd_duration]
 min_time = 500
-format = "[\ue0b2](fg:#AF8700 bg:prev_bg)[ \uf017 $duration ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#AF8700)[ \uf017 $duration ]($style)"
 style = "bg:#AF8700 fg:#FFFFFF bold"
 
 [jobs]
@@ -172,12 +172,12 @@ disabled = true
 
 [hostname]
 ssh_only = false
-format = "[\ue0b2](fg:#3A3A3A bg:prev_bg)[ $hostname ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#3A3A3A)[ $hostname ]($style)"
 style = "bg:#3A3A3A fg:#FFFFFF bold"
 
 [time]
 disabled = false
-format = "[\ue0b2](fg:#005F5F bg:prev_bg)[ \uf017 $time ]($style)"
+format = "[\ue0b0](fg:prev_bg bg:#005F5F)[ \uf017 $time ]($style)"
 style = "bg:#005F5F fg:#FFFFFF bold"
 time_format = "%I:%M %p"
 
