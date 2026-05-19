@@ -532,19 +532,15 @@ set -g status-position top
 set -g status-interval 1
 set -g status-left-length 60
 set -g status-right-length 60
-set -g status 2
-
-# Status-line 2: starship-rendered info for the currently-focused pane.
-# Uses starship-slim.toml's [profiles] tmux-info table to display git +
-# runtime info, replacing what we stripped from the prompt itself.
-set -g status-format[1] '#[align=centre,fg=#FFFFFF,bg=#1c1c1c]#(cd #{pane_current_path} 2>/dev/null; STARSHIP_CONFIG=$HOME/.config/starship-slim.toml $HOME/.local/bin/starship prompt --profile=tmux-info)'
 
 # OSC 52 + agent socket propagation. Reattaching mosh-tmux refreshes panes
 # with the LIVE forwarded sockets instead of the dead originals.
 set -g set-clipboard on
 set -ga update-environment ' TT_HOST_ALIAS COLORTERM SSH_AUTH_SOCK SSH_AGENT_PID GPG_TTY DISPLAY'
 
-# Pane border status: each pane labeled with current command + full path.
+# Pane border carries the per-pane info: current command + full path + the
+# starship-rendered git + runtime context (via the tmux-info profile in
+# starship-slim.toml). One info row per pane.
 set -g pane-border-status top
-set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{pane_current_path} '
+set -g pane-border-format '#[fg=#5F8700,bg=default] #{pane_current_command} #[fg=#0087AF,bg=default] #{pane_current_path} #(cd #{pane_current_path} 2>/dev/null; STARSHIP_CONFIG=$HOME/.config/starship-slim.toml $HOME/.local/bin/starship prompt --profile=tmux-info)'
 # dotfiles: pastel-powerline overrides v1 END
