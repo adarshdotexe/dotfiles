@@ -7,16 +7,14 @@
 
 format = "$character"
 
+add_newline = false
+
 # Profiles: starship renders different prompts depending on the
 # --profile flag. Used by tmux to render the info-line, and by the zsh
 # zle-line-finish hook for transient prompt collapse.
 [profiles]
 transient = "$character"
 tmux-info = "$git_branch$git_status $python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell"
-
-add_newline = false
-
-# Transient prompt profile for the zsh zle-line-finish hook.
 
 [fill]
 symbol = " "
