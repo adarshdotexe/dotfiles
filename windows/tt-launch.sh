@@ -27,27 +27,23 @@ esac
 printf '%s' "$SESSION" | grep -Eq '^[A-Za-z0-9._-]{1,64}$' \
   || { echo "tt-launch: invalid session name" >&2; exit 2; }
 
-# Explicit env activation — login bash on Rocky 8 doesn't source .bashrc, and
-# micromamba activation lives in .bashrc on these hosts. Source the usual
-# startup files so PATH picks up ~/.local/bin (sesh, micromamba).
-#
-# Relax strictness around the sources: distros' rc files routinely reference
-# unset variables ($HISTCONTROL, $PS1, …) which trip `set -u`, and they use
-# pipelines that may legitimately have non-zero exits ($pipefail). Restore
-# the strict mode afterwards.
+# Self-contained PATH setup — do NOT source ~/.profile or ~/.bashrc. On hosts
+# that run interactive-shell init from those files (starship init bash,
+# ble.sh / ble-attach, readline rebinds, etc.) the hooks reconfigure stdin /
+# install a DEBUG trap and the subsequent `exec tmux` fails with "open
+# terminal failed: not a terminal". We only need ~/.local/bin (sesh,
+# micromamba) and the micromamba env's bin dir on PATH; both are added below.
+# /etc/profile is still safe to source for system-level PATH (e.g. /home/utils
+# tooling on NV hosts) since it's not user-customizable.
 set +euo pipefail
 [ -r /etc/profile ] && . /etc/profile
-[ -r "$HOME/.profile" ] && . "$HOME/.profile"
-[ -r "$HOME/.bashrc" ] && . "$HOME/.bashrc"
 set -euo pipefail
 
-# If a sourced rc auto-attached ble.sh (Bash Line Editor), detach it before
-# exec'ing tmux. ble-attach hooks DEBUG / PROMPT_COMMAND and reconfigures
-# stdin; left attached, the exec below fails with "open terminal failed:
-# not a terminal".
-if [ -n "${BLE_VERSION-}" ]; then
-  ble-detach 2>/dev/null || true
-  unset BLE_VERSION
+# Prepend our userland dirs explicitly. Order: .local/bin first (sesh,
+# micromamba), then the dotfiles micromamba env's bin (tmux, mosh).
+case ":${PATH:-}:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin${PATH:+:$PATH}" ;; esac
+if [ -d "$HOME/.local/micromamba/envs/dotfiles/bin" ]; then
+  case ":$PATH:" in *":$HOME/.local/micromamba/envs/dotfiles/bin:"*) ;; *) export PATH="$HOME/.local/micromamba/envs/dotfiles/bin:$PATH" ;; esac
 fi
 
 # Micromamba activation (no-op if absent). Activates the `dotfiles` env if
