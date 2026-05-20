@@ -495,8 +495,9 @@ unset _d
 
 # Anthropic / Claude Code (non-secret URL + model). API key in secrets.csh.
 setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
-# ANTHROPIC_MODEL / ANTHROPIC_DEFAULT_OPUS_MODEL are set in ~/.claude/settings.json
-# (model: opus-4-7[1m]) -- keeping them here too would shadow the settings file.
+# ANTHROPIC_MODEL is set in ~/.claude/settings.json (model: opus-4-7[1m]) --
+# keeping it here too would shadow the settings file.
+setenv ANTHROPIC_DEFAULT_OPUS_MODEL aws/anthropic/bedrock-claude-opus-4-7
 setenv ANTHROPIC_DEFAULT_SONNET_MODEL aws/anthropic/bedrock-claude-sonnet-4-6-v1
 setenv ANTHROPIC_DEFAULT_HAIKU_MODEL aws/anthropic/bedrock-claude-haiku-4-5-v1
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
