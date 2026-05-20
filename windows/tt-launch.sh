@@ -41,6 +41,15 @@ set +euo pipefail
 [ -r "$HOME/.bashrc" ] && . "$HOME/.bashrc"
 set -euo pipefail
 
+# If a sourced rc auto-attached ble.sh (Bash Line Editor), detach it before
+# exec'ing tmux. ble-attach hooks DEBUG / PROMPT_COMMAND and reconfigures
+# stdin; left attached, the exec below fails with "open terminal failed:
+# not a terminal".
+if [ -n "${BLE_VERSION-}" ]; then
+  ble-detach 2>/dev/null || true
+  unset BLE_VERSION
+fi
+
 # Micromamba activation (no-op if absent). Activates the `dotfiles` env if
 # present so tmux/sesh from that env land on PATH.
 if [ -x "$HOME/.local/bin/micromamba" ]; then

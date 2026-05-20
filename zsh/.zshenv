@@ -37,7 +37,10 @@ export MISE_DATA_DIR="$HOME/.local/share/mise"
 # non-interactive zsh (e.g. `zsh -c 'claude ...'`) also picks them up.
 # Use ${VAR:-default} so existing env values (e.g. from sshd pam_env) win.
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="${ANTHROPIC_DEFAULT_OPUS_MODEL:-aws/anthropic/bedrock-claude-opus-4-7}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="${ANTHROPIC_DEFAULT_SONNET_MODEL:-aws/anthropic/bedrock-claude-sonnet-4-6-v1}"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="${ANTHROPIC_DEFAULT_HAIKU_MODEL:-aws/anthropic/bedrock-claude-haiku-4-5-v1}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
 

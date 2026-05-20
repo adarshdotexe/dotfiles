@@ -495,7 +495,10 @@ unset _d
 
 # Anthropic / Claude Code (non-secret URL + model). API key in secrets.csh.
 setenv ANTHROPIC_BASE_URL https://inference-api.nvidia.com/
-setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-6[1m]'
+setenv ANTHROPIC_MODEL 'aws/anthropic/bedrock-claude-opus-4-7[1m]'
+setenv ANTHROPIC_DEFAULT_OPUS_MODEL aws/anthropic/bedrock-claude-opus-4-7
+setenv ANTHROPIC_DEFAULT_SONNET_MODEL aws/anthropic/bedrock-claude-sonnet-4-6-v1
+setenv ANTHROPIC_DEFAULT_HAIKU_MODEL aws/anthropic/bedrock-claude-haiku-4-5-v1
 setenv CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS 1
 setenv CLAUDE_CODE_NO_FLICKER 1
 # UTF-8 locale — tcsh 6.16+ is multibyte-aware but only if LANG/LC_ALL ARE

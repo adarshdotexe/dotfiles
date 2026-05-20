@@ -286,29 +286,19 @@ install_powerlevel10k() {
 
 # ------------------------------------------------------------------ bash env
 # Appends a guarded init block to ~/.bashrc and ~/.profile (idempotent):
-#   - adds ~/.local/bin, mise shims, micromamba env, ~/.bun/bin to PATH
+#   - adds ~/.local/bin, mise shims, and the userland micromamba env to PATH
 #   - sources secrets.zsh (POSIX-compatible content; works in bash too)
-#
-# Migration: bumping BEGIN/END markers each schema change. On every run we
-# strip any prior dotfiles-managed block (v2 or v3) before re-emitting v3,
-# so updates to ANTHROPIC_MODEL etc. land on already-bootstrapped hosts.
 wire_bash_secrets() {
+  local marker='# dotfiles: bash environment v2 (PATH + env + secrets)'
   local rc
   for rc in "$HOME/.bashrc" "$HOME/.profile"; do
     [[ -e "$rc" ]] || continue
-    # Strip any previously-managed block (legacy v2 single-marker form, plus
-    # v3 BEGIN/END form). Both end on the secrets.zsh source line.
-    if grep -qE '^# dotfiles: bash environment v[0-9]+' "$rc"; then
-      log "Removing stale dotfiles bash block from $rc"
-      # Strip any vN BEGIN/END block (versioned), then legacy v2 (start..secrets.zsh).
-      perl -i -ne 'print unless /^# dotfiles: bash environment v\d+ BEGIN/ .. /^# dotfiles: bash environment v\d+ END/' "$rc"
-      perl -i -ne 'print unless /^# dotfiles: bash environment v2/ .. /^\[ -r "\$HOME\/\.config\/dotfiles-secrets\/secrets\.zsh"/' "$rc"
-    fi
-    log "Adding bash env block (v8) to $rc"
-    cat >> "$rc" <<'SNIPPET'
+    if ! grep -qF "$marker" "$rc" 2>/dev/null; then
+      log "Adding bash env block (v2) to $rc"
+      cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v8 BEGIN
-for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin" "$HOME/.bun/bin"; do
+# dotfiles: bash environment v2 (PATH + env + secrets)
+for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
     *) [ -d "$_d" ] && PATH="$_d:$PATH" ;;
@@ -316,192 +306,21 @@ for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micro
 done
 unset _d
 export PATH
-[ -r "$HOME/.local/share/blesh/ble.sh" ] && \
-  source "$HOME/.local/share/blesh/ble.sh" --noattach 2>/dev/null
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-6[1m]}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-aws/anthropic/bedrock-claude-opus-4-7[1m]}"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="${ANTHROPIC_DEFAULT_OPUS_MODEL:-aws/anthropic/bedrock-claude-opus-4-7}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="${ANTHROPIC_DEFAULT_SONNET_MODEL:-aws/anthropic/bedrock-claude-sonnet-4-6-v1}"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="${ANTHROPIC_DEFAULT_HAIKU_MODEL:-aws/anthropic/bedrock-claude-haiku-4-5-v1}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
-# Advertise truecolor for TUI apps (codex grey input bar etc.) — WT supports
-# it, mosh 1.4+ preserves RGB escapes, but COLORTERM is often dropped over ssh.
-export COLORTERM="${COLORTERM:-truecolor}"
-# Headless xterm hosts (BAN/SC/UFLWPE — detected by per-user scratch mount)
-# have no browser; set BROWSER=false so xdg-open doesn't spawn a phantom
-# helper. Note: this does NOT force MSAL-based CLIs (fusion) to fall through
-# to device-code — MSAL ignores the return of webbrowser.open() and still
-# waits for a callback. Use a host with a real browser (WSL) for those logins.
-[ -d "/home/scratch.${USER}_gpu" ] && export BROWSER=false
+# Anything that wants to open a URL goes through ~/.local/bin/tt-open, which
+# POSTs to the Windows-side listener over the et reverse-tunnel (see tt).
+# Outside an et session the curl fails fast and the URL is just printed.
+command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
-export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
-export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}"
-export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
-# Starship prompt — same look as csh's tcsh init; gives bash a prompt that
-# carries the same info as p10k (cwd, git, status). Skipped if not present.
-if [ -n "${TMUX-}" ]; then
-  export STARSHIP_CONFIG="$HOME/.config/starship-slim.toml"
-else
-  unset STARSHIP_CONFIG
-fi
-command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
-[ -n "${BLE_VERSION-}" ] && ble-attach 2>/dev/null
-# dotfiles: bash environment v8 END
 SNIPPET
-  done
-}
-
-# ------------------------------------------------------------------ ble.sh
-# Bash line editor that powers transient prompts (Starship docs:
-# https://starship.rs/advanced-config/). Requires bash 4.0+; xterm Rocky 8
-# and the Ubuntu hosts all ship 4.4+ so no version gate.
-install_blesh() {
-  if [[ -r "$HOME/.local/share/blesh/ble.sh" ]]; then
-    log "ble.sh already installed"
-    return 0
-  fi
-  log "Installing ble.sh (nightly tarball)"
-  mkdir -p "$HOME/.local/share"
-  curl -fsSL --connect-timeout 10 \
-    "https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz" \
-    | tar xJ -C "$HOME/.local/share/"
-  ln -sfn "$HOME/.local/share/ble-nightly" "$HOME/.local/share/blesh"
-}
-
-
-# ------------------------------------------------------------------ starship->tmux bridge
-# Tmux's #() format substitution does NOT parse ANSI escapes. Starship
-# renders ANSI, so we drop a small Python wrapper that converts ANSI to
-# tmux's #[fg=...,bg=...] markup. Pane-border-format calls this wrapper
-# instead of starship directly.
-write_starship_to_tmux() {
-  cat > "$HOME/.local/bin/starship-to-tmux" <<'WRAPPER'
-#!/usr/bin/env python3
-"""Convert starship's ANSI output to tmux format-string syntax."""
-import os, re, subprocess, sys
-
-path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~")
-try:
-    out = subprocess.check_output(
-        [os.path.expanduser("~/.local/bin/starship"), "prompt", "--profile=tmux-info"],
-        cwd=path,
-        env={**os.environ,
-             "STARSHIP_CONFIG": os.path.expanduser("~/.config/starship-slim.toml"),
-             "STARSHIP_SHELL": "fish"},
-        text=True,
-        stderr=subprocess.DEVNULL,
-        timeout=2,
-    )
-except Exception:
-    sys.exit(0)
-
-def to_hex(parts):
-    return "#{:02x}{:02x}{:02x}".format(int(parts[0]), int(parts[1]), int(parts[2]))
-
-def convert(m):
-    parts = m.group(1).split(";")
-    out, i = [], 0
-    while i < len(parts):
-        p = parts[i] if parts[i] else "0"
-        if p == "38" and i + 4 < len(parts) and parts[i + 1] == "2":
-            out.append("fg=" + to_hex(parts[i + 2:i + 5])); i += 5
-        elif p == "48" and i + 4 < len(parts) and parts[i + 1] == "2":
-            out.append("bg=" + to_hex(parts[i + 2:i + 5])); i += 5
-        elif p == "0":
-            out.append("default"); i += 1
-        elif p == "1":
-            out.append("bold"); i += 1
-        else:
-            i += 1
-    return "#[" + ",".join(out) + "]" if out else ""
-
-print(re.sub(r"\x1b\[([0-9;]*)m", convert, out).rstrip(), end="")
-WRAPPER
-  chmod +x "$HOME/.local/bin/starship-to-tmux"
-  log "Wrote ~/.local/bin/starship-to-tmux"
-}
-
-# Write ~/.blerc with starship transient prompt config (idempotent overwrite).
-wire_blerc() {
-  cat > "$HOME/.blerc" <<'BLERC'
-# Managed by dotfiles bootstrap.sh.
-# Collapse past prompts to just $character on Enter. `same-dir` keeps the
-# previous prompt visible after cd; `trim` drops multiline prompts to last line.
-bleopt prompt_ps1_transient=same-dir:trim
-bleopt prompt_ps1_final='$(starship module character)'
-BLERC
-  log "Wrote ~/.blerc"
-}
-
-# ------------------------------------------------------------------ scratch redirect
-# xterm hosts (BAN, SC, UFLWPE) cap $HOME at 5 GB. Move cache/.local/package-
-# manager dirs onto the per-user scratch mount and leave symlinks behind so
-# everything downstream (micromamba, bun, mise, claude, codex, IDE servers)
-# writes to the big filesystem from the start.
-#
-# Hard-coded to /home/scratch.${USER}_gpu (NVIDIA xterm convention). If the
-# mount isn't present (WSL, laptops), skip cleanly.
-SCRATCH_BASE="/home/scratch.${USER}_gpu"
-SCRATCH_DIRS=(.cache .local .npm .bun .vscode-server .cursor-server)
-
-redirect_home_dirs() {
-  if [[ ! -d "$SCRATCH_BASE" ]]; then
-    log "No $SCRATCH_BASE — skipping home redirect (expected on WSL/laptop)"
-    return 0
-  fi
-  log "Redirecting home dirs to $SCRATCH_BASE"
-  local dir src target
-  for dir in "${SCRATCH_DIRS[@]}"; do
-    src="$HOME/$dir"
-    target="$SCRATCH_BASE/$dir"
-    mkdir -p "$target"
-    if [[ -L "$src" ]]; then
-      # Already a symlink — make sure it points at $target.
-      if [[ "$(readlink -f "$src" 2>/dev/null)" != "$(readlink -f "$target")" ]]; then
-        log "Re-pointing $src -> $target"
-        rm -f "$src" && ln -s "$target" "$src"
-      fi
-    elif [[ -d "$src" ]]; then
-      # Real directory with content — copy contents into $target, then replace.
-      # --force lets rsync replace a target dir with a symlink (conda envs
-      # routinely ship dirs in one location and symlinks in another).
-      log "Migrating $src -> $target (rsync)"
-      if rsync -aHAX --force "$src/" "$target/" >/dev/null; then
-        rm -rf "$src" && ln -s "$target" "$src"
-      else
-        warn "rsync failed for $src; leaving in place"
-      fi
-    else
-      ln -s "$target" "$src"
     fi
   done
-}
-
-# ------------------------------------------------------------------ pin tmux
-# We've been bitten by /usr/bin/tmux (system, often older) and a userland tmux
-# (e.g. /home/utils/tmux-3.5a) sharing the same socket — different protocol
-# versions on the same socket file kill each other. Symlink ONE tmux into
-# ~/.local/bin so the shell always picks the same binary, no matter who's
-# invoking it.
-#
-# Preference order:
-#   1. /home/utils/tmux-3.5a/bin/tmux  (NVIDIA xterm — newest)
-#   2. $MAMBA_ENV/bin/tmux             (userland micromamba — fallback for no-sudo)
-#   3. /usr/bin/tmux                   (system, on Ubuntu et al — fine when modern)
-pin_tmux() {
-  local target=""
-  if [[ -x /home/utils/tmux-3.5a/bin/tmux ]]; then
-    target=/home/utils/tmux-3.5a/bin/tmux
-  elif [[ -x "$MAMBA_ENV/bin/tmux" ]]; then
-    target="$MAMBA_ENV/bin/tmux"
-  elif [[ -x /usr/bin/tmux ]]; then
-    target=/usr/bin/tmux
-  else
-    warn "no tmux candidate found to pin in $LOCAL_BIN"
-    return 0
-  fi
-  if [[ "$(readlink -f "$LOCAL_BIN/tmux" 2>/dev/null)" != "$(readlink -f "$target")" ]]; then
-    log "Pinning tmux: $LOCAL_BIN/tmux -> $target"
-    ln -sfn "$target" "$LOCAL_BIN/tmux"
-  fi
 }
 
 # ------------------------------------------------------------------ claude rule
@@ -520,14 +339,9 @@ wire_claude_rule() {
 
 ensure_repo
 
-# Stage 0: redirect ~/.cache and friends to /home/scratch.${USER}_gpu on
-# xterm hosts (no-op everywhere else). Must run before micromamba / mise /
-# bun installs land things under ~/.local.
-redirect_home_dirs
-
 # Stage 1: try system install where possible.
 PM=$(detect_pm)
-WANT_SYS=(git curl tmux zsh bzip2 rsync)
+WANT_SYS=(git curl tmux zsh)
 if has_sudo && [[ "$PM" != "none" ]]; then
   missing=()
   for p in "${WANT_SYS[@]}"; do has "$p" || missing+=("$p"); done
@@ -546,10 +360,6 @@ has bat        || MAMBA_NEED+=(bat)
 if (( ${#MAMBA_NEED[@]} > 0 )); then
   mamba_install "${MAMBA_NEED[@]}"
 fi
-
-# Stage 2a: pin a single tmux binary into ~/.local/bin to prevent the
-# 2.7-vs-3.5a socket-collision crash we've hit on the xterms.
-pin_tmux
 
 # Stage 3: single-binary userland tools.
 if ! has mise; then
@@ -586,12 +396,6 @@ if ! has sesh; then
     warn "sesh install failed; grab the binary from https://github.com/joshmedeski/sesh/releases"
   fi
   rm -rf "$tmp"
-fi
-if ! has starship; then
-  log "Installing starship"
-  curl -fsSL https://starship.rs/install.sh \
-    | sh -s -- --bin-dir "$LOCAL_BIN" --yes >/dev/null 2>&1 \
-    || warn "starship install failed; bash/tcsh fall back to default prompt"
 fi
 
 # Stage 3a: EternalTerminal + tt helpers.
@@ -641,21 +445,8 @@ if [[ -r "$SECRETS_DIR/ssh-config" ]]; then
   log "Linked $HOME/.ssh/config -> $SECRETS_DIR/ssh-config"
 fi
 
-# Stage 7b: lock down private key files in the secrets repo. git checks them
-# out 0644 by default and ssh refuses to use a world-readable key.
-if [[ -d "$SECRETS_DIR/keys" ]]; then
-  chmod 700 "$SECRETS_DIR/keys"
-  find "$SECRETS_DIR/keys" -type f \( -name '*.pem' -o -name 'id_*' \) \
-    -exec chmod 600 {} +
-fi
-
 # Stage 8a: also make bash see ANTHROPIC_API_KEY etc.
 wire_bash_secrets
-
-# Stage 8b: install ble.sh + write ~/.blerc for bash transient prompt.
-install_blesh
-wire_blerc
-write_starship_to_tmux
 
 # Stage 8: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
 wire_claude_rule
@@ -664,37 +455,6 @@ wire_claude_rule
 if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
   log "mise install (pinned tools)"
   mise install 2>&1 | tail -3 || warn "mise install had problems; rerun later"
-fi
-
-
-
-# Stage 10: install Claude Code, OpenAI Codex, and Cursor (cursor-agent) CLIs.
-# Claude and Cursor use their official installers (drop binaries into ~/.local/bin).
-# Codex ships as an npm package with platform-specific optionalDependencies
-# (@openai/codex-linux-x64 etc.) — bun's global install skips those and the
-# binary then refuses to run. Use npm (from mise node LTS) which handles them.
-export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/.bun/bin:$PATH"
-if ! has claude; then
-  log "Installing Claude Code"
-  curl -fsSL https://claude.ai/install.sh | bash >/tmp/claude-install.log 2>&1 \
-    || warn "claude install failed; see /tmp/claude-install.log"
-fi
-# Always (re)install codex via npm — running bootstrap repairs any prior
-# bun-installed copy that's missing the platform binary.
-if has npm; then
-  log "Installing OpenAI Codex CLI (npm)"
-  # Remove any bun-installed copy first so the npm one wins on PATH.
-  if has bun; then bun remove -g @openai/codex >/dev/null 2>&1 || true; fi
-  rm -f "$HOME/.bun/bin/codex"
-  npm install -g @openai/codex@latest >/tmp/codex-install.log 2>&1 \
-    || warn "codex install failed; see /tmp/codex-install.log"
-else
-  warn "npm not on PATH; codex install skipped (mise install should have pinned node lts)"
-fi
-if ! has cursor-agent; then
-  log "Installing Cursor (cursor-agent)"
-  curl -fsS https://cursor.com/install | bash >/tmp/cursor-install.log 2>&1 \
-    || warn "cursor install failed; see /tmp/cursor-install.log"
 fi
 
 cat <<'EOF'
