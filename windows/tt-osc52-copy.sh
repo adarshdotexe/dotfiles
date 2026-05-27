@@ -10,13 +10,22 @@
 #      so the fix only applies to NEW sessions.
 #
 # This helper sidesteps both. It reads the selection on stdin and writes the
-# OSC 52 sequence DIRECTLY to the tmux client's tty. Wired in via tmux's
-# copy-pipe-and-cancel; the bind passes #{client_tty} expanded at copy time
-# (send -FX), so each invocation targets the right client.
+# OSC 52 sequence DIRECTLY to the tmux client's tty.
 #
-# Usage (from tmux): copy-pipe-and-cancel "tt-osc52-copy '#{client_tty}'"
+# Usage (from tmux): copy-pipe-and-cancel "tt-osc52-copy"
+#
+# We tried passing `#{client_tty}` as $1 from the bind via `send -FX`. That
+# does not work: `-F` expands the KEYS argument to send-keys, not the command
+# string passed to copy-pipe-and-cancel. Result: $1 was always empty. We now
+# resolve the client tty from inside the helper via `tmux display -p`.
 
 tty=$1
+
+# If caller didn't pass a tty, ask tmux. Picks the first attached client of
+# whatever pane invoked us — which is exactly the client that copied.
+if [ -z "$tty" ] && command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
+  tty=$(tmux display -p '#{client_tty}' 2>/dev/null)
+fi
 
 if [ -z "$tty" ] || [ ! -w "$tty" ]; then
   exit 0

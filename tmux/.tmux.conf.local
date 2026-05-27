@@ -387,16 +387,17 @@ tmux_conf_copy_to_os_clipboard=false
 #   - Even when terminal-overrides forces the right Ms, ALREADY-ATTACHED tmux
 #     clients keep stale terminal features after a config reload. Only newly-
 #     attached clients pick up the fix; existing tabs stay broken until exit.
-# The helper bypasses both by writing OSC 52 straight to #{client_tty}. The
-# `-F` flag on `send` is required so #{client_tty} expands at copy time, not
-# bind time (otherwise every copy targets the bind-time client).
-bind -T copy-mode-vi y                 send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
-bind -T copy-mode-vi MouseDragEnd1Pane send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
-bind -T copy-mode-vi DoubleClick1Pane  select-pane \; send -X select-word \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
-bind -T copy-mode-vi TripleClick1Pane  select-pane \; send -X select-line \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
-bind -T copy-mode    MouseDragEnd1Pane send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
-bind -T copy-mode    DoubleClick1Pane  select-pane \; send -X select-word \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
-bind -T copy-mode    TripleClick1Pane  select-pane \; send -X select-line \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+# The helper writes OSC 52 straight to the attached client's tty (which it
+# resolves via `tmux display -p '#{client_tty}'` itself — `send -F` does NOT
+# expand the copy-pipe command string, only the keys argument, so passing
+# `#{client_tty}` from here would be empty).
+bind -T copy-mode-vi y                 send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
+bind -T copy-mode-vi MouseDragEnd1Pane send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
+bind -T copy-mode-vi DoubleClick1Pane  select-pane \; send -X select-word \; run-shell -d 0.3 \; send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
+bind -T copy-mode-vi TripleClick1Pane  select-pane \; send -X select-line \; run-shell -d 0.3 \; send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
+bind -T copy-mode    MouseDragEnd1Pane send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
+bind -T copy-mode    DoubleClick1Pane  select-pane \; send -X select-word \; run-shell -d 0.3 \; send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
+bind -T copy-mode    TripleClick1Pane  select-pane \; send -X select-line \; run-shell -d 0.3 \; send -X copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy"
 
 # Claude Code recommended tmux settings — allow apps (Claude Code) to use
 # DCS passthrough sequences, plus CSI-u extended keys (Ctrl-Enter, etc.).
