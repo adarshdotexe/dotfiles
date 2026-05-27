@@ -372,19 +372,31 @@ tmux_conf_theme_clock_style="12"
 #   - disabled
 # on Linux, this requires xsel, xclip or wl-copy
 #
-# We set this to `false` and rely on tmux's built-in OSC 52 (set-clipboard on
-# below) instead. With `true`, oh-my-tmux pipes selections through xsel/xclip,
-# which on our hosts try to talk to the DISPLAY value inherited from sshd
-# (a nonexistent X server) and fail silently — the copy never reaches the
-# Windows clipboard. OSC 52 ships the bytes through mosh -> WT -> Windows
-# clipboard with no X server in the loop.
+# False: oh-my-tmux's xsel/xclip path tries to talk to the DISPLAY inherited
+# from sshd (a nonexistent X server) and fails silently. We route OSC 52
+# through tt-osc52-copy below — bytes go straight through mosh -> WT with no
+# X server in the loop.
 tmux_conf_copy_to_os_clipboard=false
 
-# Enable OSC 52 clipboard writes. WT 1.13+ honours these natively.
-set -g set-clipboard on
-# Make sure the Ms terminal capability is advertised even on hosts where
-# terminfo doesn't have it — tmux uses this string to emit OSC 52.
-set -ga terminal-overrides 'xterm*:Ms=\E]52;c;%p2%s\7'
+# OSC 52 clipboard via tt-osc52-copy (installed by bootstrap.sh ->
+# ~/.local/bin/tt-osc52-copy). We deliberately do NOT use tmux's built-in
+# `set-clipboard on` + Ms override path because:
+#   - mosh 1.4 only reliably forwards the explicit-`c`-target form of OSC 52.
+#     A generic terminfo Ms emits the parameterised `\E]52;%p1%s;%p2%s\7`
+#     instead, which mosh drops.
+#   - Even when terminal-overrides forces the right Ms, ALREADY-ATTACHED tmux
+#     clients keep stale terminal features after a config reload. Only newly-
+#     attached clients pick up the fix; existing tabs stay broken until exit.
+# The helper bypasses both by writing OSC 52 straight to #{client_tty}. The
+# `-F` flag on `send` is required so #{client_tty} expands at copy time, not
+# bind time (otherwise every copy targets the bind-time client).
+bind -T copy-mode-vi y                 send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+bind -T copy-mode-vi MouseDragEnd1Pane send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+bind -T copy-mode-vi DoubleClick1Pane  select-pane \; send -X select-word \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+bind -T copy-mode-vi TripleClick1Pane  select-pane \; send -X select-line \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+bind -T copy-mode    MouseDragEnd1Pane send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+bind -T copy-mode    DoubleClick1Pane  select-pane \; send -X select-word \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
+bind -T copy-mode    TripleClick1Pane  select-pane \; send -X select-line \; run-shell -d 0.3 \; send -FX copy-pipe-and-cancel "$HOME/.local/bin/tt-osc52-copy '#{client_tty}'"
 
 # Claude Code recommended tmux settings — allow apps (Claude Code) to use
 # DCS passthrough sequences, plus CSI-u extended keys (Ctrl-Enter, etc.).
@@ -533,9 +545,10 @@ set -g status-interval 1
 set -g status-left-length 60
 set -g status-right-length 60
 
-# OSC 52 + agent socket propagation. Reattaching mosh-tmux refreshes panes
-# with the LIVE forwarded sockets instead of the dead originals.
-set -g set-clipboard on
+# Agent socket propagation. Reattaching mosh-tmux refreshes panes with the
+# LIVE forwarded sockets instead of the dead originals. (OSC 52 clipboard is
+# handled via the tt-osc52-copy bindings up in the clipboard section, NOT
+# `set-clipboard on` — see the comment there.)
 set -ga update-environment ' TT_HOST_ALIAS COLORTERM SSH_AUTH_SOCK SSH_AGENT_PID GPG_TTY DISPLAY'
 
 # Pane border carries the per-pane info: current command + full path + the

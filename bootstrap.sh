@@ -405,6 +405,7 @@ install_tt_helper tt-launch     windows/tt-launch.sh
 install_tt_helper tt-open       windows/tt-open.sh
 install_tt_helper tt-et-launch  windows/tt-et-launch.sh
 install_tt_helper tt-listener   windows/tt-listener.py
+install_tt_helper tt-osc52-copy windows/tt-osc52-copy.sh
 
 # Stage 4: oh-my-zsh + plugins + powerlevel10k.
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
