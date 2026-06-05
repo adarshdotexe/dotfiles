@@ -16,6 +16,16 @@ typeset -U path PATH
 # bun global bins (codex, etc.) — bootstrap Stage 10 installs here.
 [[ -d "$HOME/.bun/bin" ]] && path=("$HOME/.bun/bin" $path)
 
+# Rust / Tauri toolchain on scratch, not $HOME.
+if [[ -d "/home/scratch.${USER}_gpu" ]]; then
+  export RUSTUP_HOME="${RUSTUP_HOME:-/home/scratch.${USER}_gpu/.rustup}"
+  export CARGO_HOME="${CARGO_HOME:-/home/scratch.${USER}_gpu/.cargo}"
+  export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-/home/scratch.${USER}_gpu/.cargo-target}"
+  export XWIN_CACHE_DIR="${XWIN_CACHE_DIR:-/home/scratch.${USER}_gpu/.xwin}"
+  export TAURI_BUILD_ENV="${TAURI_BUILD_ENV:-/home/scratch.${USER}_gpu/.local/share/mamba/envs/tauri-build}"
+  [[ -d "$CARGO_HOME/bin" ]] && path=("$CARGO_HOME/bin" $path)
+fi
+
 export PATH
 
 # Defaults useful even for non-interactive ssh-as-command invocations.

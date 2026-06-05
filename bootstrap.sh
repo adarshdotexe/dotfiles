@@ -221,15 +221,15 @@ install_powerlevel10k() {
 #   - adds ~/.local/bin, mise shims, and the userland micromamba env to PATH
 #   - sources secrets.zsh (POSIX-compatible content; works in bash too)
 wire_bash_secrets() {
-  local marker='# dotfiles: bash environment v2 (PATH + env + secrets)'
+  local marker='# dotfiles: bash environment v3 (PATH + env + secrets)'
   local rc
   for rc in "$HOME/.bashrc" "$HOME/.profile"; do
     [[ -e "$rc" ]] || continue
     if ! grep -qF "$marker" "$rc" 2>/dev/null; then
-      log "Adding bash env block (v2) to $rc"
+      log "Adding bash env block (v3) to $rc"
       cat >> "$rc" <<'SNIPPET'
 
-# dotfiles: bash environment v2 (PATH + env + secrets)
+# dotfiles: bash environment v3 (PATH + env + secrets)
 for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micromamba/envs/dotfiles/bin"; do
   case ":$PATH:" in
     *":$_d":*) ;;
@@ -237,6 +237,17 @@ for _d in "$HOME/.local/bin" "$HOME/.local/share/mise/shims" "$HOME/.local/micro
   esac
 done
 unset _d
+if [ -d "/home/scratch.${USER}_gpu" ]; then
+  export RUSTUP_HOME="${RUSTUP_HOME:-/home/scratch.${USER}_gpu/.rustup}"
+  export CARGO_HOME="${CARGO_HOME:-/home/scratch.${USER}_gpu/.cargo}"
+  export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-/home/scratch.${USER}_gpu/.cargo-target}"
+  export XWIN_CACHE_DIR="${XWIN_CACHE_DIR:-/home/scratch.${USER}_gpu/.xwin}"
+  export TAURI_BUILD_ENV="${TAURI_BUILD_ENV:-/home/scratch.${USER}_gpu/.local/share/mamba/envs/tauri-build}"
+  case ":$PATH:" in
+    *":$CARGO_HOME/bin":*) ;;
+    *) [ -d "$CARGO_HOME/bin" ] && PATH="$CARGO_HOME/bin:$PATH" ;;
+  esac
+fi
 export PATH
 export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL:-https://inference-api.nvidia.com/}"
 # ANTHROPIC_MODEL is set in ~/.claude/settings.json (model: opus-4-7[1m]) --
