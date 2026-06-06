@@ -263,11 +263,19 @@ function tt {
 
     if ($Patterns -and $Patterns.Count -gt 0) {
         $needles = @($Patterns | ForEach-Object { $_.ToLower() })
+        # Terms must match in order across the "host session" string, each after
+        # the previous match, so every term consumes its own span: `tt uf uf`
+        # requires "uf" twice, picking UFLWPE/uflwpe (two "uf") over
+        # UFLWPE/frappe (only one "uf", in the host), while `tt uflwpe` still
+        # matches either.
         $pickedEntry = $ranked | Where-Object {
-            $hs = ("$($_.Host) $($_.Session)").ToLower()
+            $hay = ("$($_.Host) $($_.Session)").ToLower()
+            $pos = 0
             $ok = $true
             foreach ($needle in $needles) {
-                if (-not $hs.Contains($needle)) { $ok = $false; break }
+                $idx = $hay.IndexOf($needle, $pos)
+                if ($idx -lt 0) { $ok = $false; break }
+                $pos = $idx + $needle.Length
             }
             $ok
         } | Select-Object -First 1

@@ -207,13 +207,20 @@ tt() {
   local picked
   if [[ $# -gt 0 ]]; then
     local pats="$*"
+    # Terms must match in order across the "host session" string, each after
+    # the previous match. So every term consumes its own span: `tt uf uf`
+    # requires "uf" twice, picking UFLWPE/uflwpe (two "uf") over UFLWPE/frappe
+    # (only one "uf", in the host), while `tt uflwpe` still matches either.
     picked=$(_tt_score_awk "$db" | awk -F'\t' -v pats="$pats" '
       BEGIN { n = split(pats, p, " ") }
       {
-        haystack = tolower($2 " " $3)
-        ok = 1
+        hay = tolower($2 " " $3)
+        pos = 1; ok = 1
         for (i = 1; i <= n; i++) {
-          if (index(haystack, tolower(p[i])) == 0) { ok = 0; break }
+          term = tolower(p[i])
+          idx = index(substr(hay, pos), term)
+          if (idx == 0) { ok = 0; break }
+          pos = pos + idx - 1 + length(term)
         }
         if (ok) { print $2 "\t" $3; exit }
       }
