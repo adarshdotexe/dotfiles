@@ -1,30 +1,40 @@
 # ~/.config/starship-slim.toml -- managed by dotfiles.
-# Slim variant for use inside tmux (where the status bar carries hostname,
-# time, etc.) and for tcsh (whose prompt-width counting breaks on $fill
-# and multi-line + many ANSI escapes). Drops $fill and the right chain.
+# Flat single-line variant for tcsh (whose prompt-width counting breaks on
+# $fill + multi-line + many ANSI escapes) and for the tmux info-line profile.
+# Same flat, transparency-friendly palette as the main config, but on one line
+# with no $fill and no right-hand chain (status/time live elsewhere).
 # Codepoints: https://www.nerdfonts.com/cheat-sheet
 # Requires a Nerd Font in the terminal (we ship MesloLGS Nerd Font Mono).
 
-format = "$character"
-
+# Top-level keys must precede any [table] header (TOML scoping).
+palette = "modern"
 add_newline = false
 
-# Profiles: starship renders different prompts depending on the
-# --profile flag. Used by tmux to render the info-line, and by the zsh
-# zle-line-finish hook for transient prompt collapse.
+format = "$os$directory$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell$character"
+
+# Profiles: starship renders different prompts depending on the --profile flag.
+# Used by tmux to render the info-line, and by the zsh zle-line-finish hook for
+# transient prompt collapse.
 [profiles]
 transient = "$character"
 tmux-info = "$git_branch$git_status$python$nodejs$golang$rust$java$docker_context$kubernetes$terraform$aws$gcloud$azure$direnv$nix_shell"
 
-[fill]
-symbol = " "
-style = "fg:#444444"
+[palettes.modern]
+rule    = "#6c7086"
+os      = "#89b4fa"
+dir     = "#89dceb"
+git     = "#a6e3a1"
+gitwarn = "#f9e2af"
+lang    = "#cba6f7"
+ok      = "#a6e3a1"
+err     = "#f38ba8"
+warn    = "#f9e2af"
+host    = "#94e2d5"
+muted   = "#7f849c"
 
-# OS pill (always first; leading arrow lives in the main format above)
 [os]
 disabled = false
-format = "[$symbol]($style)"
-style = "bg:#3465A4 fg:#FFFFFF"
+format = "[$symbol ](fg:os)"
 
 [os.symbols]
 Alpine = "\uf300"
@@ -51,140 +61,117 @@ Windows = "\uf17a"
 Unknown = "\uf17c"
 
 [directory]
-format = "[\ue0b0](fg:prev_bg bg:#0087AF)[ \uf07c $path ]($style)"
-style = "bg:#0087AF fg:#FFFFFF bold"
+format = "[$path ](fg:dir bold)"
 truncation_length = 4
 truncation_symbol = "\u2026/"
-read_only = " \uf023 "
-read_only_style = "bg:#0087AF fg:#FF5F00"
+read_only = " \uf023"
+read_only_style = "fg:err"
 home_symbol = "~"
 
 [directory.substitutions]
 "/home/scratch.advarshney_gpu" = "scratch"
 
 [git_branch]
-symbol = "\uf126"
-format = "[\ue0b0](fg:prev_bg bg:#5F8700)[ $symbol $branch ]($style)"
-style = "bg:#5F8700 fg:#000000 bold"
+symbol = "\uf126 "
+format = "[$symbol$branch ](fg:git)"
 
 [git_status]
-format = "[$all_status$ahead_behind ]($style)"
-style = "bg:#5F8700 fg:#AA0000 bold"
-modified    = "\u00b1 "
-staged      = "+ "
-deleted     = "\u2718 "
-untracked   = "? "
-renamed     = "\u00bb "
+format = "[$all_status$ahead_behind ](fg:gitwarn)"
+modified    = "\u00b1"
+staged      = "+"
+deleted     = "\u2718"
+untracked   = "?"
+renamed     = "\u00bb"
 ahead       = "\u21e1${count}"
 behind      = "\u21e3${count}"
 diverged    = "\u21d5\u21e1${ahead_count}\u21e3${behind_count}"
-stashed     = "* "
-conflicted  = "! "
+stashed     = "*"
+conflicted  = "!"
 
-# Languages: all share #5F87AF bg; same-color transitions are invisible
-# so adjacent languages render as one continuous pill.
 [python]
-symbol = "\ue73c"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $pyenv_prefix(\\($virtualenv\\) )($version) ]($style)"
-style = "bg:#5F87AF fg:#000000 bold"
+symbol = "\ue73c "
+format = "[$symbol$pyenv_prefix(\\($virtualenv\\) )($version) ](fg:lang)"
 
 [nodejs]
-symbol = "\ue718"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
-style = "bg:#5F87AF fg:#000000 bold"
+symbol = "\ue718 "
+format = "[$symbol($version) ](fg:lang)"
 
 [golang]
-symbol = "\ue627"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
-style = "bg:#5F87AF fg:#000000 bold"
+symbol = "\ue627 "
+format = "[$symbol($version) ](fg:lang)"
 
 [rust]
-symbol = "\ue7a8"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
-style = "bg:#5F87AF fg:#000000 bold"
+symbol = "\ue7a8 "
+format = "[$symbol($version) ](fg:lang)"
 
 [java]
-symbol = "\ue738"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol ($version) ]($style)"
-style = "bg:#5F87AF fg:#000000 bold"
+symbol = "\ue738 "
+format = "[$symbol($version) ](fg:lang)"
 
 [docker_context]
-symbol = "\uf308"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context ]($style)"
-style = "bg:#5F87AF fg:#000000 bold"
+symbol = "\uf308 "
+format = "[$symbol$context ](fg:lang)"
 
 [kubernetes]
 disabled = false
 symbol = "\u2638 "
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $context\\($namespace\\) ]($style)"
-style = "bg:#5F87AF fg:#000000"
+format = "[$symbol$context\\($namespace\\) ](fg:lang)"
 
 [terraform]
-symbol = "\uf1bb"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $workspace ]($style)"
-style = "bg:#5F87AF fg:#000000"
+symbol = "\uf1bb "
+format = "[$symbol$workspace ](fg:lang)"
 
 [aws]
-symbol = "\uf270"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $profile(\\($region\\)) ]($style)"
-style = "bg:#5F87AF fg:#000000"
+symbol = "\uf270 "
+format = "[$symbol$profile(\\($region\\)) ](fg:lang)"
 
 [gcloud]
 symbol = "\ue7f1 "
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $account\\($project\\) ]($style)"
-style = "bg:#5F87AF fg:#000000"
+format = "[$symbol$account\\($project\\) ](fg:lang)"
 
 [azure]
 symbol = "\uebd8 "
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $subscription ]($style)"
-style = "bg:#5F87AF fg:#000000"
+format = "[$symbol$subscription ](fg:lang)"
 
 [direnv]
 disabled = false
-symbol = "\uf013"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $loaded$allowed ]($style)"
-style = "bg:#5F87AF fg:#000000"
+symbol = "\uf013 "
+format = "[$symbol$loaded$allowed ](fg:lang)"
 
 [nix_shell]
-symbol = "\uf313"
-format = "[\ue0b0](fg:prev_bg bg:#5F87AF)[ $symbol $state\\($name\\) ]($style)"
-style = "bg:#5F87AF fg:#000000"
+symbol = "\uf313 "
+format = "[$symbol$state\\($name\\) ](fg:lang)"
 
-# Right side: solo left-cap per segment (no cross-fill prev_bg).
 [status]
 disabled = false
 symbol = "\u2718 "
-format = "[\ue0b0](fg:prev_bg bg:#AF0000)[ $symbol$status ](bg:#AF0000 fg:#FFFFFF bold)"
+format = "[$symbol$status ](fg:err bold)"
 
 [cmd_duration]
 min_time = 500
-format = "[\ue0b0](fg:prev_bg bg:#AF8700)[ \uf017 $duration ]($style)"
-style = "bg:#AF8700 fg:#FFFFFF bold"
+format = "[\uf017 $duration ](fg:warn)"
 
 [jobs]
 symbol = "\uf013 "
-format = "[$symbol$number ]($style)"
-style = "bg:#AF8700 fg:#FFFFFF bold"
+format = "[$symbol$number ](fg:warn)"
 number_threshold = 1
 
 [username]
 disabled = true
 
 [hostname]
+disabled = true
 ssh_only = false
-format = "[\ue0b0](fg:prev_bg bg:#3A3A3A)[ $hostname ]($style)"
-style = "bg:#3A3A3A fg:#FFFFFF bold"
+format = "[$hostname ](fg:host bold)"
 
 [time]
 disabled = false
-format = "[\ue0b0](fg:prev_bg bg:#005F5F)[ \uf017 $time ]($style)"
-style = "bg:#005F5F fg:#FFFFFF bold"
+format = "[\uf017 $time ](fg:muted)"
 time_format = "%I:%M %p"
 
 [shell]
 disabled = false
-format = "[$indicator ]($style)"
-style = "fg:#8a8a8a"
+format = "[$indicator ](fg:muted)"
 bash_indicator = "bash"
 zsh_indicator = "zsh"
 fish_indicator = "fish"
@@ -195,6 +182,6 @@ nu_indicator = "nu"
 unknown_indicator = "sh"
 
 [character]
-success_symbol = "[\u276f](bold fg:#5fd700)"
-error_symbol   = "[\u276f](bold fg:#ff0000)"
-vimcmd_symbol  = "[\u276e](bold fg:#ffff00)"
+success_symbol = "[\u276f](bold fg:ok)"
+error_symbol   = "[\u276f](bold fg:err)"
+vimcmd_symbol  = "[\u276e](bold fg:warn)"
