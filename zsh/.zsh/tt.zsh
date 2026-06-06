@@ -85,6 +85,20 @@ _tt_find_wezterm() {
   return 1
 }
 
+# Given the CLI binary (wezterm.exe), return its GUI sibling. wezterm.exe is a
+# Windows *console* subsystem app, so launching it pops a stray command-prompt
+# window; wezterm-gui.exe is the windows subsystem build and opens the GUI with
+# no console. We only need the CLI binary for `cli` subcommands.
+_tt_gui_bin() {
+  local cli="$1" gui
+  gui="${cli%wezterm.exe}wezterm-gui.exe"
+  if [[ "$gui" == */* && -x "$gui" ]]; then
+    echo "$gui"
+  else
+    echo wezterm-gui.exe
+  fi
+}
+
 _tt_remote_home() {
   case "$1" in
     H100|GB100) echo /root ;;
@@ -119,9 +133,20 @@ _tt_launch() {
   local domain="$host" workspace="${host}:${session}"
   [[ "$host" == WSL ]] && domain=WSL
 
-  # Avoid passing Windows-side spawn payloads into Unix mux domains; older
-  # WezTerm releases can serialize them as Windows OsString values.
-  "$wezterm" connect "$domain" --workspace "$workspace" >/dev/null 2>&1 &!
+  local gui; gui=$(_tt_gui_bin "$wezterm")
+
+  # Keep a per-launch log instead of /dev/null so a failed connect (ssh
+  # timeout, version mismatch, ...) leaves an actionable trail rather than a
+  # window that silently never appears.
+  local logdir="${TT_LOG_DIR:-$HOME/.cache/tt}"
+  mkdir -p "$logdir" 2>/dev/null
+  local log="$logdir/connect-${domain}-${session}.log"
+
+  # Launch the GUI build (no stray console window) and avoid passing
+  # Windows-side spawn payloads into Unix mux domains; older WezTerm releases
+  # can serialize them as Windows OsString values.
+  WEZTERM_LOG="${WEZTERM_LOG:-wezterm_client=info}" \
+    "$gui" connect "$domain" --workspace "$workspace" >"$log" 2>&1 &!
 }
 
 _tt_promote() {
