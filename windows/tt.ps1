@@ -112,6 +112,21 @@ function _Tt-FindWezTerm {
     return $null
 }
 
+# Given the CLI binary (wezterm.exe), return its GUI sibling. wezterm.exe is a
+# console-subsystem app, so Start-Process'ing it pops a command window that just
+# streams wezterm's logs; wezterm-gui.exe is the windows-subsystem build and
+# opens the GUI with no console. wezterm.exe is only needed for `cli`.
+function _Tt-GuiBin {
+    param([string] $Cli)
+    if ($Cli) {
+        $gui = Join-Path (Split-Path -Parent $Cli) 'wezterm-gui.exe'
+        if (Test-Path $gui) { return $gui }
+    }
+    $cmd = Get-Command wezterm-gui.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
 function _Tt-NormalizeHost {
     param([string] $HostName)
     if ($HostName -ieq 'wsl') { return 'WSL' }
@@ -150,6 +165,11 @@ function _Tt-Launch {
         Write-Error "wezterm.exe not found. Install WezTerm or add it to PATH."
         return
     }
+    $gui = _Tt-GuiBin $wezterm
+    if (-not $gui) {
+        Write-Error "wezterm-gui.exe not found next to $wezterm."
+        return
+    }
 
     $alias = _Tt-NormalizeHost $E.Host
     $session = $E.Session
@@ -168,7 +188,7 @@ function _Tt-Launch {
     # serialize Windows OsString values and corrupt the remote PDU stream. Let
     # the remote mux spawn its default shell server-side instead.
     $wezArgs = @('connect', $domain, '--workspace', $workspace)
-    Start-Process -FilePath $wezterm -ArgumentList $wezArgs | Out-Null
+    Start-Process -FilePath $gui -ArgumentList $wezArgs | Out-Null
 }
 
 function tt {
