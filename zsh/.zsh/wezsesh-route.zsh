@@ -15,8 +15,20 @@ _wezsesh_route() {
 
   [[ -o interactive ]] || return 0
   [[ -n "${WEZTERM_PANE:-}" ]] || return 0
-  command -v wezterm >/dev/null 2>&1 || return 0
   command -v zoxide >/dev/null 2>&1 || return 0
+
+  # Resolve a wezterm that actually runs on THIS host. On hosts that share one
+  # $HOME/.local across differing OSes (e.g. SC/UFLWPE on the same scratch
+  # volume), the ~/.local/bin/wezterm symlink may be the wrong-glibc build, so
+  # prefer the binary that spawned this pane.
+  local wz=""
+  if [[ -n "${WEZTERM_EXECUTABLE:-}" && -x "${WEZTERM_EXECUTABLE:h}/wezterm" ]]; then
+    wz="${WEZTERM_EXECUTABLE:h}/wezterm"
+  elif command -v wezterm >/dev/null 2>&1; then
+    wz="wezterm"
+  else
+    return 0
+  fi
 
   # Run at most once per pane.
   local marker="${TMPDIR:-/tmp}/.wezsesh-routed.${WEZTERM_PANE}"
@@ -29,7 +41,7 @@ _wezsesh_route() {
   # Find this pane's workspace name in the mux table (col 3 = pane id,
   # col 4 = workspace). Plain text avoids a json parser dependency.
   local workspace
-  workspace=$(wezterm cli list 2>/dev/null \
+  workspace=$("$wz" cli list 2>/dev/null \
     | awk -v p="$WEZTERM_PANE" 'NR>1 && $3==p {print $4; exit}')
   [[ -n "$workspace" ]] || return 0
 
