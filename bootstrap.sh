@@ -40,16 +40,6 @@ detect_pm() {
   echo none
 }
 
-tmux_ok() {
-  local v
-  v=$(tmux -V 2>/dev/null | awk '{print $2}') || return 1
-  awk -v v="$v" 'BEGIN {
-    split(v, a, ".");
-    major = a[1] + 0; minor = a[2] + 0;
-    exit (major > 3 || (major == 3 && minor >= 2)) ? 0 : 1
-  }'
-}
-
 # ------------------------------------------------------------------ repo
 ensure_repo() {
   if [[ ! -d "$DOTFILES_DIR/.git" ]]; then
@@ -129,114 +119,78 @@ mamba_install() {
   fi
 }
 
-# ------------------------------------------------------------------ eternal-terminal
-# Build EternalTerminal from source into $HOME/.local. Replaces mosh; gives us
-# TCP-only transport (no UDP firewall headaches), native scrollback, and
-# built-in port forwarding (used for the URL-open bridge — see install_tt_open).
-# Build deps live in the micromamba `dotfiles` env (libsodium, libprotobuf,
-# gflags, openssl). RPATH points at that env so runtime resolution works.
-install_eternal_terminal() {
-  if [[ -x "$LOCAL_BIN/et" && -x "$LOCAL_BIN/etserver" ]]; then
-    log "EternalTerminal already installed at $LOCAL_BIN"
-    return 0
-  fi
-  log "Installing EternalTerminal from source (3-8 min)"
+# ------------------------------------------------------------------ wezterm mux
+WEZTERM_VERSION="${WEZTERM_VERSION:-20240203-110809-5046fc22}"
 
-  local build_dir; build_dir=$(mktemp -d)
-  local rc=0
-
-  log "Cloning EternalTerminal -> $build_dir/et"
-  if ! git clone --depth 1 --recurse-submodules \
-       https://github.com/MisterTea/EternalTerminal.git "$build_dir/et" 2>&1 | tail -3; then
-    err "git clone EternalTerminal failed"
-    rm -rf "$build_dir"
-    return 1
+detect_wezterm_dist() {
+  if [[ -n "${WEZTERM_DIST:-}" ]]; then
+    echo "$WEZTERM_DIST"
+    return
   fi
 
-  # Two build paths:
-  #   - sudo + apt-get available (WSL Ubuntu): install dev libs via apt and
-  #     build with system gcc. Avoids conda's prefixed gcc / sysroot mismatch
-  #     errors on Ubuntu 24's glibc 2.39+ (`__time64_t` undefined etc.).
-  #   - else (no-sudo Rocky 8 containers): pull libs + matched compiler into
-  #     the micromamba `dotfiles` env and link with -Wl,-rpath-link,/usr/lib64
-  #     so the conda bfd linker can still resolve system libselinux deps.
-  if has_sudo && has apt-get; then
-    log "sudo+apt path: installing ET build deps via apt"
-    sudo apt-get install -y -q \
-      cmake build-essential \
-      libsodium-dev libprotobuf-dev protobuf-compiler libgflags-dev \
-      libssl-dev zlib1g-dev libbrotli-dev libutempter-dev libcap-dev \
-      || { err "apt install of ET build deps failed"; rm -rf "$build_dir"; return 1; }
-    (
-      set -e
-      cd "$build_dir/et"
-      mkdir -p build && cd build
-      log "cmake configure (system gcc)"
-      cmake .. \
-        -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
-        -DBUILD_TESTING=OFF \
-        -DDISABLE_VCPKG=ON \
-        -DDISABLE_SENTRY=ON \
-        -DDISABLE_CRASH_LOG=ON \
-        -DDISABLE_TELEMETRY=ON \
-        > /tmp/et-cmake-config.log 2>&1
-      log "cmake build (3-5 min)"
-      cmake --build . -j"$(nproc)" > /tmp/et-build.log 2>&1
-      log "cmake install"
-      cmake --install . > /tmp/et-install.log 2>&1
-    ) || rc=$?
-  else
-    log "no-sudo path: installing ET build deps via micromamba (conda gcc + libs)"
-    mamba_install \
-      cmake libprotobuf protobuf libsodium gflags openssl zlib pcre2 \
-      brotli libbrotlidec libbrotlienc libbrotlicommon \
-      gcc_linux-64 gxx_linux-64 \
-      || { err "Failed to install ET build deps via micromamba"; rm -rf "$build_dir"; return 1; }
-    local mamba_prefix="$MAMBA_ENV"
-    (
-      set -e
-      cd "$build_dir/et"
-      mkdir -p build && cd build
-      export PATH="$mamba_prefix/bin:$PATH"
-      export CC="$mamba_prefix/bin/x86_64-conda-linux-gnu-gcc"
-      export CXX="$mamba_prefix/bin/x86_64-conda-linux-gnu-g++"
-      log "cmake configure (conda gcc, RPATH=$mamba_prefix/lib)"
-      cmake .. \
-        -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
-        -DCMAKE_PREFIX_PATH="$mamba_prefix" \
-        -DCMAKE_INSTALL_RPATH="$mamba_prefix/lib" \
-        -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
-        -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,/usr/lib64:/lib64" \
-        -DBUILD_TESTING=OFF \
-        -DDISABLE_VCPKG=ON \
-        -DDISABLE_SENTRY=ON \
-        -DDISABLE_CRASH_LOG=ON \
-        -DDISABLE_TELEMETRY=ON \
-        > /tmp/et-cmake-config.log 2>&1
-      log "cmake build (5-10 min on first install)"
-      cmake --build . -j"$(nproc)" > /tmp/et-build.log 2>&1
-      log "cmake install"
-      cmake --install . > /tmp/et-install.log 2>&1
-    ) || rc=$?
+  local id="" version_id="" major=0
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    id="${ID:-}"
+    version_id="${VERSION_ID:-}"
+    major="${version_id%%.*}"
+    [[ "$major" =~ ^[0-9]+$ ]] || major=0
   fi
 
-  rm -rf "$build_dir"
-
-  if [[ $rc -ne 0 ]]; then
-    err "EternalTerminal build failed (rc=$rc). Check /tmp/et-cmake-config.log, /tmp/et-build.log, /tmp/et-install.log"
-    return 1
-  fi
-  if [[ ! -x "$LOCAL_BIN/et" ]]; then
-    err "Build reported success but $LOCAL_BIN/et is missing"
-    return 1
-  fi
-  log "EternalTerminal: $("$LOCAL_BIN/et" --version 2>/dev/null | head -1 || echo present)"
+  case "$id" in
+    ubuntu)
+      if (( major >= 22 )); then echo Ubuntu22.04; else echo Ubuntu20.04; fi
+      ;;
+    debian)
+      if (( major >= 12 )); then echo Debian12; elif (( major >= 11 )); then echo Debian11; else echo Debian10; fi
+      ;;
+    *)
+      echo Debian10
+      ;;
+  esac
 }
 
-# tt-open + tt-et-launch are kept as live symlinks to the source files in the
-# repo so a `git pull` on a remote is enough to update them — no re-bootstrap
-# needed.
+install_wezterm_remote() {
+  local wezterm_dist; wezterm_dist=$(detect_wezterm_dist)
+  local prefix="$HOME/.local/opt/wezterm-$WEZTERM_VERSION-$wezterm_dist"
+  if [[ -x "$LOCAL_BIN/wezterm" && -x "$LOCAL_BIN/wezterm-mux-server" ]] \
+     && "$LOCAL_BIN/wezterm" --version 2>/dev/null | grep -q "$WEZTERM_VERSION"; then
+    log "WezTerm already installed: $("$LOCAL_BIN/wezterm" --version)"
+    return 0
+  fi
+
+  local asset="wezterm-$WEZTERM_VERSION.$wezterm_dist.tar.xz"
+  local url="https://github.com/wezterm/wezterm/releases/download/$WEZTERM_VERSION/$asset"
+  local tmp; tmp=$(mktemp -d)
+  log "Installing WezTerm mux binaries: $asset"
+
+  if ! curl -fL "$url" -o "$tmp/$asset"; then
+    rm -rf "$tmp"
+    err "Could not download $url"
+    return 1
+  fi
+
+  rm -rf "$prefix"
+  mkdir -p "$prefix"
+  tar -xJf "$tmp/$asset" -C "$prefix"
+  rm -rf "$tmp"
+
+  local wezterm_bin mux_bin
+  wezterm_bin=$(find "$prefix" -type f -path '*/bin/wezterm' -perm /111 | head -n 1 || true)
+  mux_bin=$(find "$prefix" -type f -path '*/bin/wezterm-mux-server' -perm /111 | head -n 1 || true)
+  if [[ -z "$wezterm_bin" || -z "$mux_bin" ]]; then
+    err "WezTerm archive did not contain expected binaries"
+    return 1
+  fi
+
+  ln -sfn "$wezterm_bin" "$LOCAL_BIN/wezterm"
+  ln -sfn "$mux_bin" "$LOCAL_BIN/wezterm-mux-server"
+  log "WezTerm: $("$LOCAL_BIN/wezterm" --version)"
+}
+
+# tt helpers are kept as live symlinks to the source files in the repo so a
+# `git pull` on a remote is enough to update them.
 install_tt_helper() {
   local name="$1" src_rel="$2"
   local src="$DOTFILES_DIR/$src_rel"
@@ -249,28 +203,6 @@ install_tt_helper() {
   if [[ -L "$dst" || -e "$dst" ]]; then rm -f "$dst"; fi
   ln -sf "$src" "$dst"
   log "Linked $name -> $src"
-}
-
-# ------------------------------------------------------------------ oh-my-tmux
-install_oh_my_tmux() {
-  if [[ -d "$HOME/.tmux" && ! -d "$HOME/.tmux/.git" ]]; then
-    local bak="$HOME/.tmux.bootstrap-backup.$(date +%s)"
-    warn "Existing $HOME/.tmux is not a git repo; moving to $bak"
-    mv "$HOME/.tmux" "$bak"
-  fi
-  if [[ ! -d "$HOME/.tmux/.git" ]]; then
-    log "Installing oh-my-tmux (gpakosz/.tmux)"
-    git clone --single-branch https://github.com/gpakosz/.tmux.git "$HOME/.tmux"
-  else
-    log "Updating oh-my-tmux"
-    git -C "$HOME/.tmux" pull --ff-only 2>/dev/null || warn "oh-my-tmux pull skipped"
-  fi
-  # Upstream provides ~/.tmux/.tmux.conf — symlink to ~/.tmux.conf.
-  if [[ ! -L "$HOME/.tmux.conf" || "$(readlink "$HOME/.tmux.conf")" != "$HOME/.tmux/.tmux.conf" ]]; then
-    [[ -e "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]] && \
-      mv "$HOME/.tmux.conf" "$HOME/.tmux.conf.bootstrap-backup.$(date +%s)"
-    ln -sfn "$HOME/.tmux/.tmux.conf" "$HOME/.tmux.conf"
-  fi
 }
 
 install_powerlevel10k() {
@@ -314,10 +246,6 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="${ANTHROPIC_DEFAULT_SONNET_MODEL:-aws/ant
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="${ANTHROPIC_DEFAULT_HAIKU_MODEL:-aws/anthropic/bedrock-claude-haiku-4-5-v1}"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_NO_FLICKER=1
-# Anything that wants to open a URL goes through ~/.local/bin/tt-open, which
-# POSTs to the Windows-side listener over the et reverse-tunnel (see tt).
-# Outside an et session the curl fails fast and the URL is just printed.
-command -v tt-open >/dev/null 2>&1 && export BROWSER=tt-open
 [ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ] && . "$HOME/.config/dotfiles-secrets/secrets.zsh"
 SNIPPET
     fi
@@ -342,7 +270,7 @@ ensure_repo
 
 # Stage 1: try system install where possible.
 PM=$(detect_pm)
-WANT_SYS=(git curl tmux zsh)
+WANT_SYS=(git curl zsh)
 if has_sudo && [[ "$PM" != "none" ]]; then
   missing=()
   for p in "${WANT_SYS[@]}"; do has "$p" || missing+=("$p"); done
@@ -353,9 +281,7 @@ if has_sudo && [[ "$PM" != "none" ]]; then
 fi
 
 # Stage 2: anything still missing -> micromamba (userland).
-# Note: mosh removed; we use EternalTerminal (built from source — see Stage 3a).
 MAMBA_NEED=()
-tmux_ok        || MAMBA_NEED+=(tmux)
 has zsh        || MAMBA_NEED+=(zsh)
 has bat        || MAMBA_NEED+=(bat)
 if (( ${#MAMBA_NEED[@]} > 0 )); then
@@ -379,33 +305,9 @@ if ! has fzf; then
   "$HOME/.fzf/install" --bin --no-update-rc >/dev/null
   ln -sf "$HOME/.fzf/bin/fzf" "$LOCAL_BIN/fzf"
 fi
-if ! has sesh; then
-  log "Installing sesh"
-  case "$(uname -m)" in
-    x86_64)        SA=x86_64 ;;
-    aarch64|arm64) SA=arm64 ;;
-    *)             SA=$(uname -m) ;;
-  esac
-  # Download then extract — avoids a quirk where filtered tar closes the pipe early.
-  tmp=$(mktemp -d)
-  if curl -fsSL "https://github.com/joshmedeski/sesh/releases/latest/download/sesh_Linux_${SA}.tar.gz" \
-       -o "$tmp/sesh.tar.gz" \
-     && tar -xzf "$tmp/sesh.tar.gz" -C "$tmp" \
-     && [[ -f "$tmp/sesh" ]]; then
-    install -m 0755 "$tmp/sesh" "$LOCAL_BIN/sesh"
-  else
-    warn "sesh install failed; grab the binary from https://github.com/joshmedeski/sesh/releases"
-  fi
-  rm -rf "$tmp"
-fi
-
-# Stage 3a: EternalTerminal + tt helpers.
-install_eternal_terminal || warn "EternalTerminal install failed; tt won't connect remotely until fixed"
-install_tt_helper tt-launch     windows/tt-launch.sh
-install_tt_helper tt-open       windows/tt-open.sh
-install_tt_helper tt-et-launch  windows/tt-et-launch.sh
-install_tt_helper tt-listener   windows/tt-listener.py
-install_tt_helper tt-osc52-copy windows/tt-osc52-copy.sh
+# Stage 3a: WezTerm mux + tt helper.
+install_wezterm_remote || warn "WezTerm mux install failed; tt remote persistence won't work until fixed"
+install_tt_helper tt-wezterm-session windows/tt-wezterm-session.sh
 
 # Stage 4: oh-my-zsh + plugins + powerlevel10k.
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
@@ -423,18 +325,15 @@ clone_omz_plugin zsh-users/zsh-autosuggestions     "$ZSH_CUSTOM/plugins/zsh-auto
 clone_omz_plugin zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 install_powerlevel10k
 
-# Stage 5: oh-my-tmux upstream (~/.tmux + ~/.tmux.conf symlink).
-install_oh_my_tmux
-
-# Stage 6: link committed configs into $HOME (.zshrc, .zshenv, .aliases,
-# .p10k.zsh, .tmux.conf.local, .gitconfig, mise/sesh under ~/.config/).
+# Stage 5: link committed configs into $HOME (.zshrc, .zshenv, .aliases,
+# .p10k.zsh, .gitconfig, mise under ~/.config/).
 log "Linking configs"
 bash "$DOTFILES_DIR/link.sh"
 
-# Stage 7: secrets repo (after link, so .zshrc is ready to source it).
+# Stage 6: secrets repo (after link, so .zshrc is ready to source it).
 ensure_secrets_repo
 
-# Stage 7a: symlink SSH config from the private secrets repo if present.
+# Stage 6a: symlink SSH config from the private secrets repo if present.
 if [[ -r "$SECRETS_DIR/ssh-config" ]]; then
   mkdir -p "$HOME/.ssh"
   chmod 700 "$HOME/.ssh"
@@ -447,13 +346,13 @@ if [[ -r "$SECRETS_DIR/ssh-config" ]]; then
   log "Linked $HOME/.ssh/config -> $SECRETS_DIR/ssh-config"
 fi
 
-# Stage 8a: also make bash see ANTHROPIC_API_KEY etc.
+# Stage 7a: also make bash see ANTHROPIC_API_KEY etc.
 wire_bash_secrets
 
-# Stage 8: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
+# Stage 7: wire the dotfiles Claude rule into global ~/.claude/CLAUDE.md.
 wire_claude_rule
 
-# Stage 9: mise install pinned tools (e.g. bun on hosts without it).
+# Stage 8: mise install pinned tools (e.g. bun on hosts without it).
 if has mise && [[ -f "$HOME/.config/mise/config.toml" ]]; then
   log "mise install (pinned tools)"
   mise install 2>&1 | tail -3 || warn "mise install had problems; rerun later"

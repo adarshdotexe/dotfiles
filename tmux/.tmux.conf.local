@@ -542,7 +542,11 @@ tmux_conf_uninstall_plugins_on_reload=true
 # dotfiles: pastel-powerline overrides v1 BEGIN
 # Status bar at top (out of the way of starship's bottom-anchored prompt).
 set -g status-position top
-set -g status-interval 1
+# Was 1 (per-second redraw for the seconds-clock). The status line is cheap
+# (native vars only, no subprocess), so this was NOT the mosh-drop culprit -
+# that was the pane-border starship spawn, now removed. Bumped to 5 to drop
+# the steady per-second cadence; the seconds clock now lags <=5s.
+set -g status-interval 5
 set -g status-left-length 60
 set -g status-right-length 60
 
@@ -552,9 +556,19 @@ set -g status-right-length 60
 # `set-clipboard on` — see the comment there.)
 set -ga update-environment ' TT_HOST_ALIAS COLORTERM SSH_AUTH_SOCK SSH_AGENT_PID GPG_TTY DISPLAY'
 
-# Pane border carries the per-pane info: current command + full path + the
-# starship-rendered git + runtime context (via the tmux-info profile in
-# starship-slim.toml). One info row per pane.
+# Pane border carries per-pane IDENTITY only: current command + full path.
+# Both are native zero-cost format vars - no subprocess on the render path.
+#
+# We deliberately DROPPED the right-side #(starship-to-tmux ...) segment
+# that used to render git + runtime context here. That call forked
+# python->starship per pane PER REDRAW; since tmux redraws on every wheel
+# event, scrolling became a fork storm on the remote that starved the
+# single-threaded mosh-server past its heartbeat -> [mosh is waiting...]
+# drops. The info is redundant anyway - starship shows it in the prompt on
+# every command. To put it back ON THE BORDER, do it the principled way: a
+# background job writes starship output into a tmux user-option (e.g.
+# @border_info) on its own cadence; the format reads #{@border_info}.
+# Decouple recompute from render - never #() inline on the render path.
 set -g pane-border-status top
-set -g pane-border-format '#[fg=#5F8700,bg=default]#[fg=#000000,bg=#5F8700,bold] #{pane_current_command} #[fg=#0087AF,bg=#5F8700,nobold]#[fg=#FFFFFF,bg=#0087AF,bold] #{pane_current_path} #[fg=#0087AF,bg=default,nobold] #[align=right]#($HOME/.local/bin/starship-to-tmux #{pane_current_path}) '
+set -g pane-border-format '#[fg=#5F8700,bg=default]#[fg=#000000,bg=#5F8700,bold] #{pane_current_command} #[fg=#0087AF,bg=#5F8700,nobold]#[fg=#FFFFFF,bg=#0087AF,bold] #{pane_current_path} #[fg=#0087AF,bg=default,nobold] '
 # dotfiles: pastel-powerline overrides v1 END

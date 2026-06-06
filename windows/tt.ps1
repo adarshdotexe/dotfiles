@@ -1,33 +1,26 @@
 <#
 .SYNOPSIS
-    tt — open a Windows Terminal tab into a remote tmux/sesh session,
-    ranked by frecency (like zoxide).
+    tt - open a WezTerm mux workspace, ranked by frecency.
 
 .DESCRIPTION
-    Tracks every (host, session) pair you've launched in $env:USERPROFILE\.config\tt\db.tsv.
-    Each launch bumps that entry's rank and timestamp. On `tt` (no args), all
-    known entries are piped through fzf (via wsl.exe), sorted with the highest
-    frecency on top, so a single Enter resumes your latest work.
+    Tracks every (host, session) pair launched in $env:USERPROFILE\.config\tt\db.tsv.
+    A launch opens the matching WezTerm domain/workspace:
 
-    Usage:
-        tt                  # fzf picker (default: highest-frecency first)
-        tt <query>          # fuzzy substring match against "HOST SESSION",
-                            # picks the highest-frecency hit
-        tt -a HOST SESSION  # add/promote without launching
-        tt -l               # list (debug)
+        WSL/main -> domain WSL, workspace WSL:main
+        BAN/pia  -> domain BAN, workspace BAN:pia
 
-    Frecency formula (zoxide-style):
-        score = rank * factor(age)
-        factor: <1h -> 4x, <1d -> 2x, <1w -> 0.5x, else 0.25x
+    Remote hosts use WezTerm SSH multiplexing, so panes survive GUI disconnects
+    without mosh or tmux.
 
-    Source from your $PROFILE:  . $HOME\repos\dotfiles\windows\tt.ps1
+.USAGE
+    tt                  # fzf picker, highest-frecency first
+    tt <query>          # fuzzy substring match against "HOST SESSION"
+    tt -n HOST SESSION  # create/promote and launch
+    tt -a HOST SESSION  # add/promote without launching
+    tt -l               # list ranked entries
 #>
 
 $script:TtDbPath = Join-Path $env:USERPROFILE '.config\tt\db.tsv'
-
-# Base64-encoded helper script body (source: dotfiles/windows/tt-launch.sh).
-# Regenerate via: base64 -w0 dotfiles/windows/tt-launch.sh
-$script:TtLaunchB64 = 'IyEvdXNyL2Jpbi9lbnYgYmFzaAojIHR0LWxhdW5jaCDigJQgcmVtb3RlIGF0dGFjaCBoZWxwZXIuIEVtYmVkZGVkIGFzIGJhc2U2NCBpbiB0dC5wczEgLyB0dC56c2guCiMKIyBUaGlzIGZpbGUgaXMgdGhlIFNPVVJDRSBPRiBUUlVUSC4gVGhlIHdyYXBwZXJzICh0dC5wczEsIHR0LnpzaCkgYmFzZTY0LWVuY29kZQojIGl0cyBjb250ZW50cyBpbnRvIGEgY29uc3RhbnQuIE9uIGVhY2ggbGF1bmNoIHRoZSB3cmFwcGVyIHdyaXRlcyBhIGZyZXNoIGNvcHkKIyB0byB+Ly5sb2NhbC9iaW4vdHQtbGF1bmNoIG9uIHRoZSByZW1vdGUgYW5kIGV4ZWMncyBgYmFzaCA8ZmlsZT4gU0VTU0lPTmAgc28KIyB0aGF0IG1vc2gncyBQVFkgc3Vydml2ZXMgb24gc3RkaW4gKHBpcGluZyB0byBgYmFzaGAgd291bGQgcmVwbGFjZSBzdGRpbiB3aXRoCiMgdGhlIHBpcGUgYW5kIHRtdXggYXR0YWNoIHdvdWxkIGZhaWwgd2l0aCAib3BlbiB0ZXJtaW5hbCBmYWlsZWQ6IG5vdCBhCiMgdGVybWluYWwiKS4KIwojIFVzYWdlOiB0dC1sYXVuY2ggU0VTU0lPTgpzZXQgLWV1byBwaXBlZmFpbAoKIyBBbHdheXMtb24gdHJhY2UuIExpdmVzIGF0IH4vLmNhY2hlL3R0LWxhdW5jaC9sYXN0LWxhdW5jaC50cmFjZSBvbiB0aGUgcmVtb3RlLgpUUkFDRV9ESVI9IiRIT01FLy5jYWNoZS90dC1sYXVuY2giCm1rZGlyIC1wICIkVFJBQ0VfRElSIgpleGVjIDk+IiRUUkFDRV9ESVIvbGFzdC1sYXVuY2gudHJhY2UiCkJBU0hfWFRSQUNFRkQ9OQpQUzQ9JysgWyQoZGF0ZSArJUg6JU06JVMpXSAke0JBU0hfU09VUkNFIyMqL306JHtMSU5FTk99OiAnCnNldCAteAoKIyBWYWxpZGF0ZSBzZXNzaW9uIG5hbWUgKGRlZmVuc2UgaW4gZGVwdGgg4oCUIGFscmVhZHkgY2hlY2tlZCBob3N0LXNpZGUpLgpTRVNTSU9OPSIkezE6P21pc3Npbmcgc2Vzc2lvbiBuYW1lfSIKY2FzZSAiJFNFU1NJT04iIGluCiAgLSopIGVjaG8gInR0LWxhdW5jaDogc2Vzc2lvbiBtdXN0IG5vdCBzdGFydCB3aXRoICctJyIgPiYyOyBleGl0IDIgOzsKZXNhYwpwcmludGYgJyVzJyAiJFNFU1NJT04iIHwgZ3JlcCAtRXEgJ15bQS1aYS16MC05Ll8tXXsxLDY0fSQnIFwKICB8fCB7IGVjaG8gInR0LWxhdW5jaDogaW52YWxpZCBzZXNzaW9uIG5hbWUiID4mMjsgZXhpdCAyOyB9CgojIFNlbGYtY29udGFpbmVkIFBBVEggc2V0dXAg4oCUIGRvIE5PVCBzb3VyY2Ugfi8ucHJvZmlsZSBvciB+Ly5iYXNocmMuIE9uIGhvc3RzCiMgdGhhdCBydW4gaW50ZXJhY3RpdmUtc2hlbGwgaW5pdCBmcm9tIHRob3NlIGZpbGVzIChzdGFyc2hpcCBpbml0IGJhc2gsCiMgYmxlLnNoIC8gYmxlLWF0dGFjaCwgcmVhZGxpbmUgcmViaW5kcywgZXRjLikgdGhlIGhvb2tzIHJlY29uZmlndXJlIHN0ZGluIC8KIyBpbnN0YWxsIGEgREVCVUcgdHJhcCBhbmQgdGhlIHN1YnNlcXVlbnQgYGV4ZWMgdG11eGAgZmFpbHMgd2l0aCAib3BlbgojIHRlcm1pbmFsIGZhaWxlZDogbm90IGEgdGVybWluYWwiLiBXZSBvbmx5IG5lZWQgfi8ubG9jYWwvYmluIChzZXNoLAojIG1pY3JvbWFtYmEpIGFuZCB0aGUgbWljcm9tYW1iYSBlbnYncyBiaW4gZGlyIG9uIFBBVEg7IGJvdGggYXJlIGFkZGVkIGJlbG93LgojIC9ldGMvcHJvZmlsZSBpcyBzdGlsbCBzYWZlIHRvIHNvdXJjZSBmb3Igc3lzdGVtLWxldmVsIFBBVEggKGUuZy4gL2hvbWUvdXRpbHMKIyB0b29saW5nIG9uIE5WIGhvc3RzKSBzaW5jZSBpdCdzIG5vdCB1c2VyLWN1c3RvbWl6YWJsZS4Kc2V0ICtldW8gcGlwZWZhaWwKWyAtciAvZXRjL3Byb2ZpbGUgXSAmJiAuIC9ldGMvcHJvZmlsZQpzZXQgLWV1byBwaXBlZmFpbAoKIyBQcmVwZW5kIG91ciB1c2VybGFuZCBkaXJzIGV4cGxpY2l0bHkuIE9yZGVyOiAubG9jYWwvYmluIGZpcnN0IChzZXNoLAojIG1pY3JvbWFtYmEpLCB0aGVuIHRoZSBkb3RmaWxlcyBtaWNyb21hbWJhIGVudidzIGJpbiAodG11eCwgbW9zaCkuCmNhc2UgIjoke1BBVEg6LX06IiBpbiAqIjokSE9NRS8ubG9jYWwvYmluOiIqKSA7OyAqKSBleHBvcnQgUEFUSD0iJEhPTUUvLmxvY2FsL2JpbiR7UEFUSDorOiRQQVRIfSIgOzsgZXNhYwppZiBbIC1kICIkSE9NRS8ubG9jYWwvbWljcm9tYW1iYS9lbnZzL2RvdGZpbGVzL2JpbiIgXTsgdGhlbgogIGNhc2UgIjokUEFUSDoiIGluICoiOiRIT01FLy5sb2NhbC9taWNyb21hbWJhL2VudnMvZG90ZmlsZXMvYmluOiIqKSA7OyAqKSBleHBvcnQgUEFUSD0iJEhPTUUvLmxvY2FsL21pY3JvbWFtYmEvZW52cy9kb3RmaWxlcy9iaW46JFBBVEgiIDs7IGVzYWMKZmkKCiMgTWljcm9tYW1iYSBhY3RpdmF0aW9uIChuby1vcCBpZiBhYnNlbnQpLiBBY3RpdmF0ZXMgdGhlIGBkb3RmaWxlc2AgZW52IGlmCiMgcHJlc2VudCBzbyB0bXV4L3Nlc2ggZnJvbSB0aGF0IGVudiBsYW5kIG9uIFBBVEguCmlmIFsgLXggIiRIT01FLy5sb2NhbC9iaW4vbWljcm9tYW1iYSIgXTsgdGhlbgogIGV4cG9ydCBNQU1CQV9FWEU9IiRIT01FLy5sb2NhbC9iaW4vbWljcm9tYW1iYSIKICBleHBvcnQgTUFNQkFfUk9PVF9QUkVGSVg9IiR7TUFNQkFfUk9PVF9QUkVGSVg6LSRIT01FLy5sb2NhbC9taWNyb21hbWJhfSIKICBldmFsICIkKCIkTUFNQkFfRVhFIiBzaGVsbCBob29rIC0tc2hlbGwgYmFzaCkiCiAgWyAtZCAiJE1BTUJBX1JPT1RfUFJFRklYL2VudnMvZG90ZmlsZXMiIF0gJiYgbWljcm9tYW1iYSBhY3RpdmF0ZSBkb3RmaWxlcwpmaQoKZXhwb3J0IFRUX0hPU1RfQUxJQVM9IiR7VFRfSE9TVF9BTElBUzotJHtIT1NUTkFNRSUlLip9fSIKCiMgdG11eCBtdXN0IGJlIG9uIFBBVEguCmNvbW1hbmQgLXYgdG11eCA+L2Rldi9udWxsIHx8IHsgZWNobyAidHQtbGF1bmNoOiB0bXV4IG5vdCBvbiBQQVRIIiA+JjI7IGV4aXQgMzsgfQoKIyAyLXRpZXIgYXR0YWNoIGxhZGRlcjoKIyAgIDEuIHNlc2ggY29ubmVjdCDigJQgaGFuZGxlcyBleGlzdGluZy10bXV4IChwcmVmaXggbWF0Y2gpIEFORCB6b3hpZGUtcGF0aCBjcmVhdGUKIyAgIDIuIGZhbGxiYWNrOiB0bXV4IG5ldy1zZXNzaW9uIC1BcyDigJQgZm9yIGdlbnVpbmVseS1uZXcgc2Vzc2lvbnMgc2VzaCBkb2Vzbid0IGtub3cKIwojIERvIE5PVCBgZXhlYyBzZXNoIC4uLiB8fCB0cnVlYCDigJQgZXhlYyByZXBsYWNlcyB0aGUgc2hlbGwsIHNvIHRoZSBmYWxsYmFjayBpcwojIHVucmVhY2hhYmxlIHdoZW4gc2VzaCBleGl0cyBub24temVyby4gUnVuIHNlc2gsIGV4aXQgb24gc3VjY2Vzcywgb3RoZXJ3aXNlCiMgZmFsbCB0aHJvdWdoLgppZiBjb21tYW5kIC12IHNlc2ggPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgaWYgc2VzaCBjb25uZWN0ICIkU0VTU0lPTiI7IHRoZW4KICAgIGV4aXQgMAogIGZpCmZpCmV4ZWMgdG11eCBuZXctc2Vzc2lvbiAtQXMgIiRTRVNTSU9OIgo='
 
 function _Tt-ReadDb {
     $dir = Split-Path $script:TtDbPath
@@ -53,7 +46,6 @@ function _Tt-WriteDb {
     $lines = $Db.Values | ForEach-Object {
         '{0}`t{1}`t{2}`t{3}' -f $_.Host, $_.Session, $_.Rank, $_.LastUsed
     }
-    # Replace literal `t with actual tab — PowerShell quirk: -f does not interpret `t.
     $lines = $lines -replace '`t', "`t"
     Set-Content -Path $script:TtDbPath -Value $lines -Encoding utf8
 }
@@ -71,14 +63,9 @@ function _Tt-Score {
 
 function _Tt-Seed {
     param([hashtable] $Db)
-    # Pull hosts from ssh config so the first invocation isn't an empty picker.
-    # Sessions are NOT seeded from sesh.toml — sesh's job is to discover what
-    # exists on each remote (tmux ls, zoxide, ssh hosts). tt just tracks which
-    # (host, session) pairs YOU have launched, regardless of how sesh resolves
-    # the session name on arrival.
     $cfg = "$env:USERPROFILE\.ssh\config"
-
     $hosts = @()
+
     if (Test-Path $cfg) {
         foreach ($line in Get-Content $cfg) {
             $m = [regex]::Match($line, '^\s*Host\s+(.+?)\s*$', 'IgnoreCase')
@@ -88,9 +75,8 @@ function _Tt-Seed {
             }
         }
     }
-    # WSL is a local "host" — tt launches directly without mosh.
+
     $hosts = @('WSL') + $hosts
-    # Seed a default "main" entry per host so first-time `tt` shows something.
     foreach ($h in $hosts) {
         $key = "${h}`tmain"
         if (-not $Db.ContainsKey($key)) {
@@ -102,9 +88,7 @@ function _Tt-Seed {
             }
         }
     }
-    # Prune: drop entries whose Host isn't in the current ssh config. Session
-    # names are arbitrary (whatever sesh finds on the remote) so we don't
-    # validate them. Renamed hosts lose their rank — re-promote via `tt -n`.
+
     $validHosts = @{}
     foreach ($h in $hosts) { $validHosts[$h] = $true }
     $toRemove = @()
@@ -114,69 +98,77 @@ function _Tt-Seed {
     foreach ($k in $toRemove) { $Db.Remove($k) | Out-Null }
 }
 
-function _Tt-FindWt {
-    $cmd = Get-Command wt.exe -ErrorAction SilentlyContinue
+function _Tt-FindWezTerm {
+    $cmd = Get-Command wezterm.exe -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
     foreach ($candidate in @(
-        "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe",
-        "$env:USERPROFILE\AppData\Local\Microsoft\WindowsApps\wt.exe"
-    )) { if (Test-Path $candidate) { return $candidate } }
+        "$env:ProgramFiles\WezTerm\wezterm.exe",
+        "${env:ProgramFiles(x86)}\WezTerm\wezterm.exe",
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps\wezterm.exe",
+        "$env:USERPROFILE\scoop\apps\wezterm\current\wezterm.exe"
+    )) {
+        if ($candidate -and (Test-Path $candidate)) { return $candidate }
+    }
     return $null
+}
+
+function _Tt-NormalizeHost {
+    param([string] $HostName)
+    if ($HostName -ieq 'wsl') { return 'WSL' }
+    return $HostName
+}
+
+function _Tt-RemoteHome {
+    param([string] $HostName)
+    switch -Exact ($HostName) {
+        'H100'  { return '/root' }
+        'GB100' { return '/root' }
+        default { return '/home/advarshney' }
+    }
+}
+
+function _Tt-WorkspaceExists {
+    param([string] $WezTerm, [string] $Workspace)
+    try {
+        $json = & $WezTerm cli list --format json 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $json) { return $false }
+        $items = $json | ConvertFrom-Json
+        foreach ($item in @($items)) {
+            if ($item.workspace -eq $Workspace) { return $true }
+        }
+    } catch {
+        return $false
+    }
+    return $false
 }
 
 function _Tt-Launch {
     param([PSCustomObject] $E)
-    $wt = _Tt-FindWt
-    if (-not $wt) {
-        Write-Error "wt.exe not found. Install Windows Terminal or add it to PATH."
+
+    $wezterm = _Tt-FindWezTerm
+    if (-not $wezterm) {
+        Write-Error "wezterm.exe not found. Install WezTerm or add it to PATH."
         return
     }
-    $alias   = $E.Host
+
+    $alias = _Tt-NormalizeHost $E.Host
     $session = $E.Session
-    # Defense-in-depth session-name validation. The remote helper re-validates,
-    # but rejecting here stops any wt/wsl/mosh tab from opening on bad input.
-    # Disallow leading '-' (avoids being parsed as an option) and constrain to
-    # the safe character class.
-    if ($session.StartsWith('-') -or $session -notmatch '^[A-Za-z0-9._-]{1,64}$') {
-        Write-Error "tt: invalid session name '$session' -- must match [A-Za-z0-9._-]{1,64} and not start with '-'"
+    if ($alias.StartsWith('-') -or $alias -notmatch '^[A-Za-z0-9._-]{1,64}$') {
+        Write-Error "tt: invalid host '$alias' -- must match [A-Za-z0-9._-]{1,64} and not start with '-'"
         return
     }
-    $distro = if ($env:TT_WSL_DISTRO) { $env:TT_WSL_DISTRO } else { 'Ubuntu' }
-    $b64 = $script:TtLaunchB64
-    # Inner remote command:
-    #   1. mkdir + echo <b64> | base64 -d > ~/.local/bin/tt-launch (writes a
-    #      fresh helper every launch — wrappers and helper stay in sync).
-    #   2. chmod 0755 — make the helper executable (cosmetic; we `bash <file>`
-    #      so it isn't strictly required, but helps anyone poking at it).
-    #   3. exec bash ~/.local/bin/tt-launch SESSION — reads the helper FROM
-    #      DISK so stdin stays attached to mosh's PTY (piping the script to
-    #      `bash` would lose the PTY and tmux attach would fail with
-    #      "open terminal failed: not a terminal").
-    # No `;` anywhere in this string — `&&` only. wt.exe's action-splitter
-    # treats unescaped `;` as a new-action delimiter inside the command, so
-    # keeping it out avoids accidental tab fragmentation.
-    # `TT_HOST_ALIAS=<alias>` is exported so the helper renders the tmux title
-    # with the ssh-config alias (BAN, UFLWPE) rather than the remote's actual
-    # hostname (dc4-container-xterm-28). The helper's fallback `${HOSTNAME%%.*}`
-    # would otherwise win.
-    $remote = "export TT_HOST_ALIAS='$alias' && mkdir -p ~/.local/bin && echo $b64 | base64 -d > ~/.local/bin/tt-launch && chmod 0755 ~/.local/bin/tt-launch && exec bash ~/.local/bin/tt-launch '$session'"
-    if ($alias -eq 'WSL') {
-        # Local WSL — no mosh.
-        & $wt -w 0 new-tab --title "WSL:$session" wsl.exe -d $distro -- bash -c $remote
-    } else {
-        # Remote via mosh. wt's post-`--` argv form passes the rest as a flat
-        # argv to wsl.exe so wt doesn't interpret `;` / `\` in the command.
-        # MOSH_TITLE_NOPREFIX=1 stops mosh-client from prepending "[mosh] " to
-        # the window title (undocumented but supported since mosh 1.3).
-        $wtArgs = @(
-            '-w','0','new-tab','--title',"${alias}:${session}",
-            '--',
-            'wsl.exe','-d',$distro,'--',
-            'env','MOSH_TITLE_NOPREFIX=1','LC_ALL=C.UTF-8','LANG=C.UTF-8',
-            'mosh',$alias,'--','bash','-c',$remote
-        )
-        & $wt @wtArgs
+    if ($session.StartsWith('-') -or $session -notmatch '^[A-Za-z0-9._-]{1,64}$') {
+        Write-Error "tt: invalid session '$session' -- must match [A-Za-z0-9._-]{1,64} and not start with '-'"
+        return
     }
+
+    $domain = if ($alias -eq 'WSL') { 'WSL' } else { $alias }
+    $workspace = '{0}:{1}' -f $alias, $session
+    # On Windows clients, passing a PROG/CWD spawn payload to a Unix mux can
+    # serialize Windows OsString values and corrupt the remote PDU stream. Let
+    # the remote mux spawn its default shell server-side instead.
+    $wezArgs = @('connect', $domain, '--workspace', $workspace)
+    Start-Process -FilePath $wezterm -ArgumentList $wezArgs | Out-Null
 }
 
 function tt {
@@ -186,12 +178,9 @@ function tt {
         [switch] $a,
         [Parameter(ParameterSetName = 'List')]
         [switch] $l,
-        # -n HOST SESSION: explicit "new" — create+launch even if not in db
         [Parameter(ParameterSetName = 'New')]
         [switch] $n,
 
-        # All remaining args. Pick: zoxide-style fuzzy patterns (all must match).
-        # Add / New: positional HOST then SESSION.
         [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
         [string[]] $Patterns
     )
@@ -200,7 +189,6 @@ function tt {
     _Tt-Seed $db
     $now = [DateTimeOffset]::Now.ToUnixTimeSeconds()
 
-    # -l: list debug view
     if ($PSCmdlet.ParameterSetName -eq 'List') {
         $db.Values |
             Sort-Object -Property @{Expression={_Tt-Score $_ $now}; Descending=$true} |
@@ -216,49 +204,44 @@ function tt {
         return
     }
 
-    # -n: explicit new — direct launch HOST + SESSION, create if missing
     if ($PSCmdlet.ParameterSetName -eq 'New') {
         if (-not $Patterns -or $Patterns.Count -lt 2) {
             Write-Error "Usage: tt -n HOST SESSION"; return
         }
-        $newHost    = $Patterns[0]
+        $newHost    = _Tt-NormalizeHost $Patterns[0]
         $newSession = $Patterns[1]
         $key = "${newHost}`t${newSession}"
         if (-not $db.ContainsKey($key)) {
             $db[$key] = [PSCustomObject]@{ Host=$newHost; Session=$newSession; Rank=0.0; LastUsed=[int64]0 }
         }
-        $db[$key].Rank     += 1
-        $db[$key].LastUsed  = $now
+        $db[$key].Rank += 1
+        $db[$key].LastUsed = $now
         _Tt-WriteDb $db
         _Tt-Launch $db[$key]
         return
     }
 
-    # -a: add/promote without launching
     if ($PSCmdlet.ParameterSetName -eq 'Add') {
         if (-not $Patterns -or $Patterns.Count -lt 2) {
             Write-Error "Usage: tt -a HOST SESSION"; return
         }
-        $addHost    = $Patterns[0]
+        $addHost = _Tt-NormalizeHost $Patterns[0]
         $addSession = $Patterns[1]
         $key = "${addHost}`t${addSession}"
         if (-not $db.ContainsKey($key)) {
             $db[$key] = [PSCustomObject]@{ Host=$addHost; Session=$addSession; Rank=0.0; LastUsed=[int64]0 }
         }
-        $db[$key].Rank     += 1
-        $db[$key].LastUsed  = $now
+        $db[$key].Rank += 1
+        $db[$key].LastUsed = $now
         _Tt-WriteDb $db
         "Promoted: $addHost / $addSession (rank=$($db[$key].Rank))"
         return
     }
 
-    # Pick mode
     $ranked = $db.Values | Sort-Object -Property @{Expression={_Tt-Score $_ $now}; Descending=$true}
-
     $pickedEntry = $null
+
     if ($Patterns -and $Patterns.Count -gt 0) {
-        # zoxide-style: every pattern must appear (case-insensitive) somewhere in
-        # "<host> <session>". Highest-frecency hit wins.
         $needles = @($Patterns | ForEach-Object { $_.ToLower() })
         $pickedEntry = $ranked | Where-Object {
             $hs = ("$($_.Host) $($_.Session)").ToLower()
@@ -274,12 +257,10 @@ function tt {
             return
         }
     } else {
-        # Build TSV: HOST<TAB>SESSION, pipe to wsl fzf (--reverse so top item = top of screen).
         $lines = $ranked | ForEach-Object { "$($_.Host)`t$($_.Session)" }
-        $listText = ($lines -join "`n")
-        $pick = $listText | wsl.exe fzf --reverse --no-multi --prompt 'tt> ' `
-                                       --delimiter "`t" --with-nth "1,2" `
-                                       --header 'pick host/session (ranked by frecency)'
+        $pick = ($lines -join "`n") | wsl.exe fzf --reverse --no-multi --prompt 'tt> ' `
+                                         --delimiter "`t" --with-nth "1,2" `
+                                         --header 'pick host/session (ranked by frecency)'
         if (-not $pick) { return }
         $h, $s = $pick -split "`t", 2
         $pickedEntry = $ranked | Where-Object { $_.Host -eq $h -and $_.Session -eq $s } | Select-Object -First 1
@@ -288,10 +269,8 @@ function tt {
         }
     }
 
-    # Promote
-    $pickedEntry.Rank     += 1
-    $pickedEntry.LastUsed  = $now
+    $pickedEntry.Rank += 1
+    $pickedEntry.LastUsed = $now
     _Tt-WriteDb $db
-
     _Tt-Launch $pickedEntry
 }

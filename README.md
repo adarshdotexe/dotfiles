@@ -2,7 +2,7 @@
 
 Portable dev environment for any Linux host (Rocky 8 with no sudo, Ubuntu,
 macOS, WSL). Mirrors Adarsh's BAN setup: zsh + oh-my-zsh + Powerlevel10k,
-tmux + oh-my-tmux, sesh, zoxide, fzf, mise.
+WezTerm mux, zoxide, fzf, mise.
 
 ## One-line install
 
@@ -15,12 +15,12 @@ exec zsh -l
 
 1. Clones this repo to `~/repos/dotfiles`.
 2. Installs missing tools:
-   - **sudo + apt/dnf available** → system install of `git curl tmux zsh mosh`.
+   - **sudo + apt/dnf available** → system install of `git curl zsh`.
    - **no sudo** → falls back to userland `micromamba` env at `~/.local/micromamba/envs/dotfiles/`.
-3. Drops single-binary userland tools into `~/.local/bin`: `mise`, `zoxide`, `fzf`, `sesh`.
+3. Drops single-binary userland tools into `~/.local/bin`: `mise`, `zoxide`, `fzf`, and pinned WezTerm mux binaries.
 4. Installs **oh-my-zsh** + custom plugins (`zsh-autosuggestions`, `zsh-syntax-highlighting`) + **Powerlevel10k**.
-5. Clones **oh-my-tmux** (`gpakosz/.tmux`) and symlinks `~/.tmux.conf` to its upstream file.
-6. Runs `link.sh`, which symlinks every file under `zsh/`, `tmux/`, `sesh/`, `git/`, `mise/` into `$HOME`, preserving directory structure.
+5. Runs `link.sh`, which symlinks every file under `zsh/`, `git/`, `mise/`, `csh/`, `codex/`, and `starship/` into `$HOME`, preserving directory structure.
+6. Installs `tt-wezterm-session`, the helper used by Windows `tt` to start WezTerm mux workspaces.
 7. Clones the **private** secrets repo `adarshdotexe/dotfiles-secrets` to `~/.config/dotfiles-secrets/` (requires SSH-agent access).
 8. Adds an idempotent `@import` line to `~/.claude/CLAUDE.md` pointing at `claude/CLAUDE.md` so every Claude session knows to edit *this* repo, not the live files.
 9. `mise install` to materialize pinned tools (e.g. `bun`).
@@ -37,18 +37,17 @@ dotfiles/
 │   ├── .zshenv                 PATH + env for all zsh invocations
 │   ├── .aliases                sourced from .zshrc
 │   ├── .p10k.zsh               Powerlevel10k user config
-│   └── .zsh/completions/       runtime-generated sesh completion etc.
-├── tmux/
-│   └── .tmux.conf.local        oh-my-tmux overrides (upstream .tmux.conf is symlinked)
-├── sesh/.config/sesh/sesh.toml
+│   └── .zsh/tt.zsh             WezTerm mux launcher
 ├── git/
 │   ├── .gitconfig
 │   └── .gitignore_global
 ├── mise/.config/mise/config.toml
 ├── claude/CLAUDE.md            the dotfiles-workflow rule, imported into global ~/.claude/CLAUDE.md
+├── windows/tt.ps1              Windows tt launcher for WezTerm mux domains
+├── windows/tt-wezterm-session.sh remote pane entrypoint
 └── docs/
     ├── secrets.md              how the private dotfiles-secrets repo works
-    └── wsl-windows-terminal.md mosh client + WT profiles (Phase 2)
+    └── wsl-windows-terminal.md historical Windows Terminal/mosh notes
 ```
 
 ## Editing rule

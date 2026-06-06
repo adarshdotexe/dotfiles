@@ -527,8 +527,11 @@ setenv OPENAI_MODEL 'openai/openai/gpt-5.5'
 # zoxide-as-cd: tcsh has no functions/chpwd, so shell out to ~/.local/bin/zcd-csh
 # (shipped by dotfiles) and feed the chosen path back to the builtin chdir.
 # Also tracks visited dirs so the frecency DB stays current.
-if ( -x ~/.local/bin/zcd-csh && { which zoxide >& /dev/null } ) then
-    alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
+if ( -x ~/.local/bin/zcd-csh ) then
+    which zoxide >& /dev/null
+    if ( $status == 0 ) then
+        alias cd 'chdir "`~/.local/bin/zcd-csh \!*`" && zoxide add "$cwd" >& /dev/null'
+    endif
 endif
 
 # Starship prompt — tcsh uses the slim config (tcsh's prompt-width counting
