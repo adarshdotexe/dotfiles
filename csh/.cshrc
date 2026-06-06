@@ -524,6 +524,20 @@ if ($?ANTHROPIC_API_KEY) setenv OPENAI_API_KEY "$ANTHROPIC_API_KEY"
 setenv OPENAI_BASE_URL 'https://inference-api.nvidia.com/v1/'
 setenv OPENAI_MODEL 'openai/openai/gpt-5.5'
 
+# WezTerm mux panes: hand off to zsh (the interactive daily driver). The login
+# shell on these hosts is csh, but WezTerm's mux spawns the login shell, which
+# left tt sessions in csh and bypassed the zsh wezsesh-route hook (no zoxide
+# cd into the workspace's project). Re-exec zsh so the hook runs and the full
+# zsh environment is restored. Scoped to interactive WezTerm panes; plain csh
+# logins and non-interactive shells are untouched. TT_ZSH_HANDOFF guards the
+# re-exec against loops (a csh subshell launched from the new zsh).
+if ( $?prompt && $?WEZTERM_PANE && ! $?TT_ZSH_HANDOFF ) then
+    setenv TT_ZSH_HANDOFF 1
+    if ( -x /bin/zsh ) exec /bin/zsh -l
+    if ( -x /usr/bin/zsh ) exec /usr/bin/zsh -l
+    if ( -x ~/.local/bin/zsh ) exec ~/.local/bin/zsh -l
+endif
+
 # zoxide-as-cd: tcsh has no functions/chpwd, so shell out to ~/.local/bin/zcd-csh
 # (shipped by dotfiles) and feed the chosen path back to the builtin chdir.
 # Also tracks visited dirs so the frecency DB stays current.
