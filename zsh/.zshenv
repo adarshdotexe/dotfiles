@@ -64,8 +64,4 @@ export CLAUDE_CODE_NO_FLICKER=1
 [[ -r "$HOME/.config/dotfiles-secrets/secrets.zsh" ]] && \
   source "$HOME/.config/dotfiles-secrets/secrets.zsh"
 
-# OpenAI-compatible config — same key as Anthropic on the NVIDIA inference
-# gateway. Set AFTER secrets so $ANTHROPIC_API_KEY is populated.
-export OPENAI_API_KEY="${OPENAI_API_KEY:-$ANTHROPIC_API_KEY}"
-export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://inference-api.nvidia.com/v1/}"
-export OPENAI_MODEL="${OPENAI_MODEL:-openai/openai/gpt-5.5}"
+# Do not set OPENAI_* here; Codex should use its own `codex login` credentials.
